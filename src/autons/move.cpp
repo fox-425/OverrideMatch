@@ -191,3 +191,136 @@ namespace Move {
     is_turning = false;
   }
 }
+
+void moveToPoint(
+  double x, double y, bool rev, uint32_t time_limit_msec, bool chain,
+    float d_kp, float d_ki, float d_kd, float h_kp, float h_ki, float h_kd,
+    bool dir_change_start, bool dir_change_end,
+    float min_output, float max_output,
+    float max_accel, float max_decel
+) {
+  is_turning = true;                  // Set turning state
+  double threshold = 0.5;
+  float add = (rev) ? 180.0f : 0.0f;
+  float slew_fwd = (rev) ? max_decel : max_accel;
+  float slew_rev = (rev) ? max_accel : max_decel;
+  bool min_speed = false;
+  if(chain) {
+    // Adjust slew rates and min speed for chaining
+    if(!dir_change_start && dir_change_end) {
+      slew_fwd = (rev) ? max_decel : 24.0f;
+      slew_rev = (rev) ? 24.0f : max_decel;
+    }
+    if(dir_change_start && !dir_change_end) {
+      slew_fwd = (rev) ? 24.0f : max_accel;
+      slew_rev = (rev) ? max_accel : 24.0f;
+      min_speed = true;
+    }
+    if(!dir_change_start && !dir_change_end) {
+      slew_fwd = 24.0f;
+      slew_rev = 24.0f;
+      min_speed = true;
+    }
+  }
+
+  PID pid_d = PID(hypot(x - getX(), y - getY()), d_kp, d_ki, d_kd);
+  PID pid_h = PID(h_kp, h_ki, h_kd);
+
+  // Set PID targets for distance and heading
+  pid_distance.setTarget(hypot(x - getX(), y - getY()));
+  pid_distance.setIntegralMax(0);  
+  pid_distance.setIntegralRange(3);
+  pid_distance.setSmallBigErrorTolerance(threshold, threshold * 3);
+  pid_distance.setSmallBigErrorDuration(50, 250);
+  pid_distance.setDerivativeTolerance(5);
+  
+  pid_heading.setTarget(normalizeTarget(radToDeg(atan2(x - getX(), y - getY())) + add));
+  pid_heading.setIntegralMax(0);  
+  pid_heading.setIntegralRange(1);
+  
+  pid_heading.setSmallBigErrorTolerance(0, 0);
+  pid_heading.setSmallBigErrorDuration(0, 0);
+  pid_heading.setDerivativeTolerance(0);
+  pid_heading.setArrive(false);
+
+  // Reset the chassis
+  double start_time = millis();
+  double left_output = 0, right_output = 0, correction_output = 0, prev_left_output = 0, prev_right_output = 0;
+  double exittolerance = 1;
+  bool perpendicular_line = false, prev_perpendicular_line = true;
+
+  double current_angle = 0, overturn_value = 0;
+  bool ch = true;
+
+  // Main PID loop for moving to point
+  while (millis() - start_time <= time_limit_msec) {
+    // Continuously update targets as robot moves
+    pid_heading.setTarget(normalizeTarget(radToDeg(atan2(x - getX(), y - getY())) + add));
+    pid_distance.setTarget(hypot(x - getX(), y - getY()));
+    current_angle = getInertialHeading();
+    // Calculate drive output based on heading and distance
+    left_output = pid_distance.update(0) * cos(degToRad(atan2(x - getX(), y - getY()) * 180 / M_PI + add - current_angle)) * dir;
+    right_output = left_output;
+    // Check if robot has crossed the perpendicular line to the target
+    perpendicular_line = ((getY() - y) * -cos(degToRad(normalizeTarget(current_angle + add))) <= (getX() - x) * sin(degToRad(normalizeTarget(current_angle + add))) + exittolerance);
+    if(perpendicular_line && !prev_perpendicular_line) {
+      break;
+    }
+    prev_perpendicular_line = perpendicular_line;
+
+    // Only apply heading correction if far from target
+    if(hypot(x - getX(), y - getY()) > 8 && ch == true) {
+      correction_output = pid_heading.update(current_angle);
+    } else {
+      correction_output = 0;
+      ch = false;
+    }
+
+    // Minimum Output Check
+    if(min_speed) {
+      scaleToMin(left_output, right_output, min_output);
+    }
+
+    // Overturn logic for sharp turns
+    overturn_value = fabs(left_output) + fabs(correction_output) - max_output;
+    if(overturn_value > 0 && overturn) {
+      if(left_output > 0) {
+        left_output -= overturn_value;
+      }
+      else {
+        left_output += overturn_value;
+      }
+    }
+    right_output = left_output;
+    left_output = left_output + correction_output;
+    right_output = right_output - correction_output;
+
+    // Max Output Check
+    scaleToMax(left_output, right_output, max_output);
+
+    // Max Acceleration/Deceleration Check
+    if(prev_left_output - left_output > max_slew_rev) {
+      left_output = prev_left_output - max_slew_rev;
+    }
+    if(prev_right_output - right_output > max_slew_rev) {
+      right_output = prev_right_output - max_slew_rev;
+    }
+    if(left_output - prev_left_output > max_slew_fwd) {
+      left_output = prev_left_output + max_slew_fwd;
+    }
+    if(right_output - prev_right_output > max_slew_fwd) {
+      right_output = prev_right_output + max_slew_fwd;
+    }
+    prev_left_output = left_output;
+    prev_right_output = right_output;
+    driveChassis(left_output, right_output); // Apply output to chassis
+    pros::delay(10);
+  }
+  if(exit == true) {
+    prev_left_output = 0;
+    prev_right_output = 0;
+    stopChassis(E_MOTOR_BRAKE_HOLD); // Stop at end if required
+  }
+  correct_angle = getInertialHeading(); // Update global heading
+  is_turning = false;                   // Reset turning state
+}
