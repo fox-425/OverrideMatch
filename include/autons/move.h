@@ -65,10 +65,10 @@ namespace Move {
 
   void moveToPoint(
     double x, double y, int32_t dir, uint32_t time_limit_msec, bool chain,
-    double d_kp, double d_ki, double d_kd, double h_kp, double h_ki, double h_kd,
+    float d_kp, float d_ki, float d_kd, float h_kp, float h_ki, float h_kd,
     bool dir_change_start, bool dir_change_end,
-    double min_output = 0, double max_output = 12,
-    double max_slew_accel_fwd = 12, double max_slew_decel_rev = 12, double max_slew_decel_fwd = 12, double max_slew_accel_rev = 12
+    float min_output = 0.0f, float max_output = 12.0f,
+    float max_accel_fwd = 12.0f, float max_decel_rev = 12.0f, float max_decel_fwd = 12.0f, float max_accel_rev = 12.0f
   );
 
 }
