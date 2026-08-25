@@ -68,7 +68,7 @@ namespace Move {
     float d_kp, float d_ki, float d_kd, float h_kp, float h_ki, float h_kd,
     bool dir_change_start, bool dir_change_end,
     float min_output = 0.0f, float max_output = 12.0f,
-    float max_accel_fwd = 12.0f, float max_decel_rev = 12.0f, float max_decel_fwd = 12.0f, float max_accel_rev = 12.0f
+    float max_accel = 12.0f, float max_decel = 12.0f
   );
 
 }
