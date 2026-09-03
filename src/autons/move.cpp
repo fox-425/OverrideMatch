@@ -190,118 +190,119 @@ namespace Move {
     correct_angle = turn_angle;
     is_turning = false;
   }
-}
 
-void moveToPoint(
-  double x, double y, bool rev, uint32_t time_limit_msec, bool chain,
+  void moveToPoint(
+    double x, double y, bool rev, uint32_t time_limit_msec, bool chain, bool stop,
     float d_kp, float d_ki, float d_kd, float h_kp, float h_ki, float h_kd,
     float overtol, bool dir_change_start, bool dir_change_end,
     float min_output, float max_output,
     float max_accel, float max_decel
-) {
-  is_turning = true;                  // Set turning state
-  float add = (rev) ? 180.0f : 0.0f;
-  float slew_fwd = (rev) ? max_decel : max_accel;
-  float slew_rev = (rev) ? max_accel : max_decel;
-  bool min_speed = false;
-  if(chain) {
-    // Adjust slew rates and min speed for chaining
-    if(!dir_change_start && dir_change_end) {
-      slew_fwd = (rev) ? max_decel : 24.0f;
-      slew_rev = (rev) ? 24.0f : max_decel;
+  ) {
+    is_turning = true;                  // Set turning state
+    float add = (rev) ? 180.0f : 0.0f;
+    float slew_fwd = (rev) ? max_decel : max_accel;
+    float slew_rev = (rev) ? max_accel : max_decel;
+    bool min_speed = false;
+    if(chain) {
+      // Adjust slew rates and min speed for chaining
+      if(!dir_change_start && dir_change_end) {
+        slew_fwd = (rev) ? max_decel : 24.0f;
+        slew_rev = (rev) ? 24.0f : max_decel;
+      }
+      if(dir_change_start && !dir_change_end) {
+        slew_fwd = (rev) ? 24.0f : max_accel;
+        slew_rev = (rev) ? max_accel : 24.0f;
+        min_speed = true;
+      }
+      if(!dir_change_start && !dir_change_end) {
+        slew_fwd = 24.0f;
+        slew_rev = 24.0f;
+        min_speed = true;
+      }
     }
-    if(dir_change_start && !dir_change_end) {
-      slew_fwd = (rev) ? 24.0f : max_accel;
-      slew_rev = (rev) ? max_accel : 24.0f;
-      min_speed = true;
+
+    PID pid_d = PID(hypot(x - MU::getX(), y - MU::getY()), d_kp, d_ki, d_kd);
+    PID pid_h = PID(MU::normalizeTarget(utils::radToDeg(atan2(x - MU::getX(), y - MU::getY())) + add), h_kp, h_ki, h_kd);
+
+    // Set PID targets for distance and heading
+    pid_d.setIntegral(0.0f, 3.3f);
+    pid_d.setExit(5.0f, 0.5f, 1.5f, 50, 250);
+
+    pid_h.setIntegral(0.0f, 1.0f);
+    pid_h.setExit(0.0f, 0.0f, 0.0f, 0, 0);
+    pid_h.setArrive(false);
+
+    // Reset the chassis
+    uint32_t start_time = pros::millis();
+    float left_output = 0.0f, right_output = 0.0f, prev_left_output = 0.0f, prev_right_output = 0.0f;
+    PID::PIDoutput correction_output;
+    bool perpendicular_line = false, prev_perpendicular_line = true;
+
+    double current_angle = 0, overturn_value = 0;
+    bool ch = true;
+    int32_t dir = (rev) ? -1 : 1;
+
+    // Main PID loop for moving to point
+    while (pros::millis() - start_time <= time_limit_msec) {
+      // Continuously update targets as robot moves
+      pid_h.setTarget(MU::normalizeTarget(utils::radToDeg(atan2(x - MU::getX(), y - MU::getY())) + add));
+      pid_d.setTarget(hypot(x - MU::getX(), y - MU::getY()));
+      current_angle = MU::getInertialHeading();
+      // Calculate drive output based on heading and distance
+      left_output = pid_d.update(pros::millis(), 0).out * cos(utils::degToRad(atan2(x - MU::getX(), y - MU::getY()) * 180 / M_PI + add - current_angle)) * dir;
+      right_output = left_output;
+      // Check if robot has crossed the perpendicular line to the target
+      perpendicular_line = ((MU::getY() - y) * -cos(utils::degToRad(MU::normalizeTarget(current_angle + add))) <= (MU::getX() - x) * sin(utils::degToRad(MU::normalizeTarget(current_angle + add))) + overtol);
+      if(perpendicular_line && !prev_perpendicular_line) {
+        break;
+      }
+      prev_perpendicular_line = perpendicular_line;
+
+      // Only apply heading correction if far from target
+      if(hypot(x - MU::getX(), y - MU::getY()) > 8 && ch == true) {
+        correction_output = pid_h.update(pros::millis(), current_angle);
+      } else {
+        correction_output.out = 0;
+        ch = false;
+      }
+
+      // Minimum Output Check
+      if(min_speed) {
+        MU::scaleToMin(left_output, right_output, min_output);
+      }
+
+      // Overturn logic for sharp turns
+      overturn_value = fabs(left_output) + fabs(correction_output.out) - max_output;
+      if(overturn_value > 0) {
+        left_output += (left_output > 0) ? -overturn_value : overturn_value;
+      }
+      right_output = left_output;
+      left_output = left_output + correction_output.out;
+      right_output = right_output - correction_output.out;
+
+      // Max Output Check
+      MU::scaleToMax(left_output, right_output, max_output);
+
+      // Max Acceleration/Deceleration Check
+      if(prev_left_output - left_output > slew_rev) {
+        left_output = prev_left_output - slew_rev;
+      }
+      if(prev_right_output - right_output > slew_rev) {
+        right_output = prev_right_output - slew_rev;
+      }
+      if(left_output - prev_left_output > slew_fwd) {
+        left_output = prev_left_output + slew_fwd;
+      }
+      if(right_output - prev_right_output > slew_fwd) {
+        right_output = prev_right_output + slew_fwd;
+      }
+      prev_left_output = left_output;
+      prev_right_output = right_output;
+      MU::driveChassis(left_output, right_output); // Apply output to chassis
+      pros::delay(10);
     }
-    if(!dir_change_start && !dir_change_end) {
-      slew_fwd = 24.0f;
-      slew_rev = 24.0f;
-      min_speed = true;
-    }
+    correct_angle = MU::getInertialHeading(); // Update global heading
+    is_turning = false;                   // Reset turning state
   }
 
-  PID pid_d = PID(hypot(x - getX(), y - getY()), d_kp, d_ki, d_kd);
-  PID pid_h = PID(normalizeTarget(radToDeg(atan2(x - getX(), y - getY())) + add), h_kp, h_ki, h_kd);
-
-  // Set PID targets for distance and heading
-  pid_d.setIntegral(0.0f, 3.3f);
-  pid_d.setExit(5.0f, 0.5f, 1.5f, 50, 250);
-
-  pid_h.setIntegral(0.0f, 1.0f);
-  pid_h.setExit(0.0f, 0.0f, 0.0f, 0, 0);
-  pid_h.setArrive(false);
-
-  // Reset the chassis
-  uint32_t start_time = millis();
-  float left_output = 0.0f, right_output = 0.0f, correction_output = 0.0f, prev_left_output = 0.0f, prev_right_output = 0.0f;
-  float exittolerance = 1.0f;
-  bool perpendicular_line = false, prev_perpendicular_line = true;
-
-  double current_angle = 0, overturn_value = 0;
-  bool ch = true;
-  int32_t dir = (rev) ? -1 : 1;
-
-  // Main PID loop for moving to point
-  while (pros::millis() - start_time <= time_limit_msec) {
-    // Continuously update targets as robot moves
-    pid_h.setTarget(normalizeTarget(radToDeg(atan2(x - getX(), y - getY())) + add));
-    pid_d.setTarget(hypot(x - getX(), y - getY()));
-    current_angle = getInertialHeading();
-    // Calculate drive output based on heading and distance
-    left_output = pid_d.update(0) * cos(degToRad(atan2(x - getX(), y - getY()) * 180 / M_PI + add - current_angle)) * dir;
-    right_output = left_output;
-    // Check if robot has crossed the perpendicular line to the target
-    perpendicular_line = ((getY() - y) * -cos(degToRad(normalizeTarget(current_angle + add))) <= (getX() - x) * sin(degToRad(normalizeTarget(current_angle + add))) + exittolerance);
-    if(perpendicular_line && !prev_perpendicular_line) {
-      break;
-    }
-    prev_perpendicular_line = perpendicular_line;
-
-    // Only apply heading correction if far from target
-    if(hypot(x - getX(), y - getY()) > 8 && ch == true) {
-      correction_output = pid_h.update(current_angle);
-    } else {
-      correction_output = 0;
-      ch = false;
-    }
-
-    // Minimum Output Check
-    if(min_speed) {
-      scaleToMin(left_output, right_output, min_output);
-    }
-
-    // Overturn logic for sharp turns
-    overturn_value = fabs(left_output) + fabs(correction_output) - max_output;
-    if(overturn_value > 0) {
-      left_output += (left_output > 0) ? -overturn_value : overturn_value;
-    }
-    right_output = left_output;
-    left_output = left_output + correction_output;
-    right_output = right_output - correction_output;
-
-    // Max Output Check
-    scaleToMax(left_output, right_output, max_output);
-
-    // Max Acceleration/Deceleration Check
-    if(prev_left_output - left_output > max_slew_rev) {
-      left_output = prev_left_output - max_slew_rev;
-    }
-    if(prev_right_output - right_output > max_slew_rev) {
-      right_output = prev_right_output - max_slew_rev;
-    }
-    if(left_output - prev_left_output > max_slew_fwd) {
-      left_output = prev_left_output + max_slew_fwd;
-    }
-    if(right_output - prev_right_output > max_slew_fwd) {
-      right_output = prev_right_output + max_slew_fwd;
-    }
-    prev_left_output = left_output;
-    prev_right_output = right_output;
-    driveChassis(left_output, right_output); // Apply output to chassis
-    pros::delay(10);
-  }
-  correct_angle = getInertialHeading(); // Update global heading
-  is_turning = false;                   // Reset turning state
 }

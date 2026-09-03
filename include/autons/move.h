@@ -64,7 +64,7 @@ namespace Move {
   );
 
   void moveToPoint(
-    double x, double y, bool rev, uint32_t time_limit_msec, bool chain,
+    double x, double y, bool rev, uint32_t time_limit_msec, bool chain, bool stop,
     float d_kp, float d_ki, float d_kd, float h_kp, float h_ki, float h_kd,
     float overtol, bool dir_change_start, bool dir_change_end,
     float min_output = 0.0f, float max_output = 12.0f,
