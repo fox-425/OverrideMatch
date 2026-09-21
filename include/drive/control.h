@@ -5,6 +5,7 @@
 #include "pros/misc.hpp"
 
 class Control {
+public:
   Drive& chassis;
   Controller& primary;
   bool reversed;

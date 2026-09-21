@@ -12,12 +12,12 @@
 #include <cmath>
 #include <arm_neon.h>
 
-int8_t M1Port = 1;
-int8_t M2Port = -2;
-int8_t M3Port = 3;
-int8_t M4Port = -4;
-int8_t M5Port = 5;
-int8_t M6Port = -6;
+int8_t M1Port = 11;
+int8_t M2Port = 12;
+int8_t M3Port = -13;
+int8_t M4Port = -1;
+int8_t M5Port = -2;
+int8_t M6Port = 3;
 Motor M1(M1Port, MotorGearset::blue);
 Motor M2(M2Port, MotorGearset::blue);
 Motor M3(M3Port, MotorGearset::blue);
@@ -25,6 +25,8 @@ Motor M4(M4Port, MotorGearset::blue);
 Motor M5(M5Port, MotorGearset::blue);
 Motor M6(M6Port, MotorGearset::blue);
 Drive chassis(M1, M2, M3, M4, M5, M6);
+pros::Controller primary(pros::E_CONTROLLER_MASTER);
+Control control(chassis, primary);
 
 /**
  * Runs initialization code. This occurs as soon as the program is started.
@@ -83,7 +85,7 @@ void autonomous() {}
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-  
+  /*
 	PID testPID(100, 0.5, 0, 12);
   testPID.setExit(10, 2, 1, 500, 150);
 
@@ -146,7 +148,10 @@ void opcontrol() {
   pros::screen::print(E_TEXT_MEDIUM, 1, "%d", pros::millis());
   pros::screen::print(E_TEXT_MEDIUM, 2, "%d", testPID.exitType());
   // */
-  while(true){
-    pros::delay(5000);
+
+
+  while (true) {
+    control.Arcade();
+    pros::delay(10);
   }
 }

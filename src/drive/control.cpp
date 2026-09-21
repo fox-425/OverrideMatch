@@ -25,9 +25,18 @@ void Control::Arcade() {
   int32_t LY = primary.get_analog(E_CONTROLLER_ANALOG_LEFT_Y);
   int32_t RX = primary.get_analog(E_CONTROLLER_ANALOG_RIGHT_X);
   if (reversed) {LY = -LY;}
-
+  
   LY = (float)LY * 94.48819f;
   RX = (float)RX * 94.48819f;
+  
+  if (LY > 84.667f) {
+    LY = 2.0*(float)LY - 127;
+  } else if (LY < -84.667f) {
+    LY = 2.0*(float)LY + 127;
+  } else {
+    LY = 0.5*(float)LY;
+  }
+
   float total = std::abs(LY) + std::abs(RX);
 
   if (total > 12000.0f) {
