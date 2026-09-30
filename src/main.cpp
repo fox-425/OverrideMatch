@@ -28,6 +28,8 @@ Drive chassis(M1, M2, M3, M4, M5, M6);
 pros::Controller primary(pros::E_CONTROLLER_MASTER);
 Control control(chassis, primary);
 
+
+
 /**
  * Runs initialization code. This occurs as soon as the program is started.
  *
@@ -36,7 +38,6 @@ Control control(chassis, primary);
  */
 void initialize() {
   // Printing::init();
-
 	pros::delay(2000);
 }
 
@@ -152,6 +153,8 @@ void opcontrol() {
 
   while (true) {
     control.Arcade();
+    control.Digitals();
+
     pros::delay(10);
   }
 }

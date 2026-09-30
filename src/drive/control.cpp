@@ -18,7 +18,7 @@ void Control::Digitals() {
   bool S = primary.get_digital(E_CONTROLLER_DIGITAL_DOWN);
   bool W = primary.get_digital(E_CONTROLLER_DIGITAL_LEFT);
   */
-
+  bool R1 = primary.get_digital(E_CONTROLLER_DIGITAL_R1);
 }
 
 void Control::Arcade() {
@@ -26,8 +26,18 @@ void Control::Arcade() {
   int32_t RX = primary.get_analog(E_CONTROLLER_ANALOG_RIGHT_X);
   if (reversed) {LY = -LY;}
   
-  LY = (float)LY * 94.48819f;
-  RX = (float)RX * 94.48819f;
+  LY = (float)LY * 94.4882f;
+  RX = (float)RX * 94.4882f;
+  if (LY > 12000) {
+    LY = 12000;
+  } else if (LY < -12000) {
+    LY = -12000;
+  }
+  if (RX > 12000) {
+    RX = 12000;
+  } else if (RX < -12000) {
+    RX = -12000;
+  }
   
   if (LY > 84.667f) {
     LY = 2.0*(float)LY - 127;

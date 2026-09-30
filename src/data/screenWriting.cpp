@@ -3,7 +3,6 @@
 #include "pros/rtos.hpp"
 
 namespace Printing {
-
   void init() {
     pros::screen::set_eraser(0x00000000);
     pros::screen::set_pen(0x00FFFFFF);
