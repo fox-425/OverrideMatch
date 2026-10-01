@@ -39,7 +39,11 @@ Buffer::Buffer():
 void Buffer::addToBuffer(Data data) {
   uint16_t select = index/64;
   uint8_t next = index % 64;
-  bits[select] |= (uint64_t)data.data[0] << next;
+  uint8_t length = 64*(7+data.pidCount);
+  if (length + index > 32) {
+    bits[select] |= (uint64_t)data.data[0] << next;
+  }
+  // bits[select] |= (uint64_t)data.data[0] << next;
 }
 
 std::array<uint32_t, 8192> Buffer::flushBuffer() {
