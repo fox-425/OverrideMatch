@@ -4,7 +4,7 @@
 #define LOG_FILE_PATH "/usd/log.bin"
 
 Data::Data(uint32_t time, uint32_t RotY, uint32_t RotX, uint32_t RotC, double DI, double D1, double D2, double D3, double D4):
-  pidCount(0)
+  pidCount(0), data({})
 {
   data[0] = (uint64_t)time << 32;
   data[0] |= (uint64_t)RotY;
@@ -37,8 +37,9 @@ Buffer::Buffer():
 {}
 
 void Buffer::addToBuffer(Data data) {
-  uint16_t select = index/64;
-  uint8_t next = index % 64;
+  uint16_t select = (uint16_t) (index/64);
+  uint8_t next = (uint8_t) (index%64);
+  uint8_t length = 448 + (data.pidCount>0)?pidCount*96:0;
   bits[select] |= (uint64_t)data.data[0] << next;
 }
 
