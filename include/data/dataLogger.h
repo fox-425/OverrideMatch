@@ -15,6 +15,7 @@ struct Data {
 struct Buffer {
   std::array<uint64_t, 8192> bits;
   uint32_t index;
+  pros::Mutex mutex;
 
   Buffer();
 
@@ -32,7 +33,7 @@ struct Logger {
   Logger();
 
   void switchBuffer();
-  void addToBuffer(Data data);
+  void addToBuffer(Data &data);
 
   void startLogging();
   void logToSD();

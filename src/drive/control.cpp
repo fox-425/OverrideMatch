@@ -2,12 +2,10 @@
 #include "utils.h"
 
 Control::Control(Drive& chassis, Controller& primary):
-  chassis(chassis), primary(primary)
-{
-  reversed = false;
-}
+  chassis(chassis), primary(primary), R1(false)
+{}
 
-void Control::Digitals() {
+uint8_t Control::Buttons(uint8_t prev) {
   /*
   bool A = primary.get_digital(E_CONTROLLER_DIGITAL_A);
   bool B = primary.get_digital(E_CONTROLLER_DIGITAL_B);
@@ -19,12 +17,25 @@ void Control::Digitals() {
   bool W = primary.get_digital(E_CONTROLLER_DIGITAL_LEFT);
   */
   bool R1 = primary.get_digital(E_CONTROLLER_DIGITAL_R1);
+  bool R2 = primary.get_digital(E_CONTROLLER_DIGITAL_R2);
+  bool R1_prev = prev & 0b00000001;
+
+  if (R1 && !R1_prev) {
+    chassis.toggle_intake();
+  }
+  if (R2) {
+    chassis.intake(12000);
+  } else {
+    chassis.intake(0);
+  }
+
+  uint8_t next = R1 ? 0b00000001 : 0;
+  return next;
 }
 
 void Control::Arcade() {
-  int32_t LY = primary.get_analog(E_CONTROLLER_ANALOG_LEFT_Y);
+  int32_t LY = -primary.get_analog(E_CONTROLLER_ANALOG_LEFT_Y);
   int32_t RX = primary.get_analog(E_CONTROLLER_ANALOG_RIGHT_X);
-  if (reversed) {LY = -LY;}
   
   LY = (float)LY * 94.4882f;
   RX = (float)RX * 94.4882f;

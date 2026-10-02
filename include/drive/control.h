@@ -8,11 +8,11 @@ class Control {
 public:
   Drive& chassis;
   Controller& primary;
-  bool reversed;
+  bool R1;
 
   Control(Drive& chassis, Controller& primary);
 
-  void Digitals();
+  uint8_t Buttons(uint8_t next);
 
   void Arcade();
 };

@@ -1,7 +1,13 @@
 #include "drive/drive.h"
 
-Drive::Drive(Motor& M1, Motor& M2, Motor& M3, Motor& M4, Motor& M5, Motor& M6):
-  M1(M1), M2(M2), M3(M3), M4(M4), M5(M5), M6(M6)
+Drive::Drive(
+  Motor& M1, Motor& M2, Motor& M3, Motor& M4, Motor& M5, Motor& M6,
+  Motor& MI,
+  adi::DigitalOut& Intake1, adi::DigitalOut& Intake2
+):
+  M1(M1), M2(M2), M3(M3), M4(M4), M5(M5), M6(M6),
+  MI(MI),
+  Intake1(Intake1), Intake2(Intake2), intake_state(false)
 {}
 
 void Drive::millivolts(int32_t mvL, int32_t mvR) {
@@ -11,6 +17,16 @@ void Drive::millivolts(int32_t mvL, int32_t mvR) {
   M4.move_voltage(mvR);
   M5.move_voltage(mvR);
   M6.move_voltage(mvR);
+}
+
+void Drive::toggle_intake() {
+  intake_state = !intake_state;
+  Intake1.set_value(intake_state);
+  Intake2.set_value(intake_state);
+}
+
+void Drive::intake(int32_t mv) {
+  MI.move_voltage(mv);
 }
 
 void Drive::brake(motor_brake_mode_e_t type) {

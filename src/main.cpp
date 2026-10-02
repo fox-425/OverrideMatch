@@ -4,7 +4,9 @@
 #include "tracking/tracker.h"
 #include "tracking/odom.h"
 #include "autons/move.h"
+#include "data/EMSG.h"
 #include "data/screenWriting.h"
+#include "data/dataLogger.h"
 #include "utils.h"
 #include "pid.h"
 
@@ -12,21 +14,39 @@
 #include <cmath>
 #include <arm_neon.h>
 
-int8_t M1Port = 11;
-int8_t M2Port = 12;
-int8_t M3Port = -13;
-int8_t M4Port = -1;
-int8_t M5Port = -2;
-int8_t M6Port = 3;
+int8_t M1Port = 1;
+int8_t M2Port = 2;
+int8_t M3Port = -3;
+int8_t M4Port = -11;
+int8_t M5Port = -12;
+int8_t M6Port = 13;
+int8_t MIPort = 5;
+int8_t D1Port = 21;
+int8_t D2Port = 21;
+int8_t D3Port = 21;
+int8_t D4Port = 21;
+char In1_3Wire = 'G';
+char In2_3Wire = 'H';
+
+EMSG eMsg;
 Motor M1(M1Port, MotorGearset::blue);
 Motor M2(M2Port, MotorGearset::blue);
 Motor M3(M3Port, MotorGearset::blue);
 Motor M4(M4Port, MotorGearset::blue);
 Motor M5(M5Port, MotorGearset::blue);
 Motor M6(M6Port, MotorGearset::blue);
-Drive chassis(M1, M2, M3, M4, M5, M6);
+Motor MI(MIPort, MotorGearset::blue);
+pros::adi::DigitalOut In1(In1_3Wire);
+pros::adi::DigitalOut In2(In2_3Wire);
+pros::Distance D1(D1Port);
+pros::Distance D2(D2Port);
+pros::Distance D3(D3Port);
+pros::Distance D4(D4Port);
+
+Drive chassis(M1, M2, M3, M4, M5, M6, MI, In1, In2);
 pros::Controller primary(pros::E_CONTROLLER_MASTER);
 Control control(chassis, primary);
+Logger logger;
 
 
 
@@ -37,7 +57,8 @@ Control control(chassis, primary);
  * to keep execution time for this mode under a few seconds.
  */
 void initialize() {
-  // Printing::init();
+  Printing::init();
+  logger.startLogging();
 	pros::delay(2000);
 }
 
@@ -150,10 +171,10 @@ void opcontrol() {
   pros::screen::print(E_TEXT_MEDIUM, 2, "%d", testPID.exitType());
   // */
 
-
+  uint8_t prev = 0;
   while (true) {
     control.Arcade();
-    control.Digitals();
+    prev = control.Buttons(prev);
 
     pros::delay(10);
   }

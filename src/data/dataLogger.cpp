@@ -1,7 +1,8 @@
 #include "data/dataLogger.h"
-#include "pros/rtos.hpp"
+#include "data/EMSG.h"
 #include <bit>
 
+extern EMSG eMsg;
 #define LOG_FILE_PATH "/usd/log.bin"
 
 Data::Data(uint32_t time, uint32_t RotY, uint32_t RotX, uint32_t RotC, double DI, double D1, double D2, double D3, double D4):
@@ -75,11 +76,11 @@ void Buffer::addToBuffer(Data &data) {
   }
 }
 
-std::array<uint32_t, 8192> Buffer::flushBuffer() {
-  // std::array<uint32_t, 8000> flushedBits = bits;
-  // index = 0;
-  // bits.fill(0x0U);
-  // return flushedBits;
+std::array<uint64_t, 8192> Buffer::flushBuffer() {
+  std::array<uint64_t, 8192> flushedBits = bits;
+  index = 0;
+  bits.fill(0);
+  return flushedBits;
 }
 
 Logger::Logger():
@@ -92,11 +93,15 @@ void Logger::switchBuffer() {
   buffer1Active = !buffer1Active;
 }
 
-void Logger::addToBuffer(Data data) {
+void Logger::addToBuffer(Data &data) {
   if (buffer1Active) {
+    buffer1.mutex.lock();
     buffer1.addToBuffer(data);
+    buffer1.mutex.unlock();
   } else {
+    buffer2.mutex.lock();
     buffer2.addToBuffer(data);
+    buffer2.mutex.unlock();
   }
 }
 
@@ -109,13 +114,25 @@ void Logger::startLogging() {
 void Logger::logToSD() {
   FILE* file = fopen(LOG_FILE_PATH, "wb");
   if (file == nullptr) {
-    // send msg to screen writer
+    // eMsg.addText("Failed to open log file. ");
+    // Data testData(pros::millis(), 1, 2, 3, 0.1, 0.2, 0.3, 0.4, 0.5);
+    // addToBuffer(testData);
+    // std::string temp = "";
+    // for (int i = 0; i < buffer1.index+1; i++) {
+    // }
+    
     return;
   }
-  while (true) {
+  while (false) {
     switchBuffer();
-    // std::array<uint32_t, 8000> data = buffer1Active ? buffer2.flushBuffer() : buffer1.flushBuffer();
-    // fwrite(data.data(), sizeof(uint32_t), 8000, file);
+    if (buffer1Active) {buffer1.mutex.lock();}
+    else {buffer2.mutex.lock();}
+    
+    std::array<uint64_t, 8192> data = buffer1Active ? buffer2.flushBuffer() : buffer1.flushBuffer();
+    if (buffer1Active) {buffer1.mutex.unlock();}
+    else {buffer2.mutex.unlock();}
+    
+    fwrite(data.data(), sizeof(uint64_t), 8192, file);
     fflush(file);
     
     pros::delay(100);
