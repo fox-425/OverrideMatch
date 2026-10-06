@@ -8,7 +8,6 @@ class Control {
 public:
   Drive& chassis;
   Controller& primary;
-  bool R1;
 
   Control(Drive& chassis, Controller& primary);
 
