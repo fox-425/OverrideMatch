@@ -47,8 +47,8 @@ void Buffer::addToBuffer(Data &data) {
   uint8_t next = (uint8_t) (index%64);
   if (next != 0) {
     for (int i = 0; i < 7; i++) {
-        bits[select+i] |= data.data[i] >> next;
-        bits[select+i+1] = data.data[i] << 64-next;
+      bits[select+i] |= data.data[i] >> next;
+      bits[select+i+1] = data.data[i] << 64-next;
     }
   } else {
     for (int i = 0; i < 7; i++) {
@@ -61,6 +61,16 @@ void Buffer::addToBuffer(Data &data) {
   if (data.pidCount == 0) {
     index++;
   } else {
+    uint64_t pidCountData = (uint64_t) (data.pidCount+7) << 60;
+    if (next <= 60) {
+      bits[select] |= pidCountData >> next;
+    } else {
+      bits[select] |= pidCountData >> next;
+      bits[select+1] = pidCountData << 64-next;
+    }
+    index += 4;
+    select = (uint16_t) (index/64);
+    next = (uint8_t) (index%64);
     int loops = (int) (((double)data.pidCount * 3.0+1)/2.0);
     if (next != 0) {
       for (int i = 0; i < loops; i++) {
@@ -76,11 +86,9 @@ void Buffer::addToBuffer(Data &data) {
   }
 }
 
-std::array<uint64_t, 8192> Buffer::flushBuffer() {
-  std::array<uint64_t, 8192> flushedBits = bits;
+void Buffer::clearBuffer() {
   index = 0;
   bits.fill(0);
-  return flushedBits;
 }
 
 Logger::Logger():
@@ -114,27 +122,35 @@ void Logger::startLogging() {
 void Logger::logToSD() {
   FILE* file = fopen(LOG_FILE_PATH, "wb");
   if (file == nullptr) {
-    // eMsg.addText("Failed to open log file. ");
-    // Data testData(pros::millis(), 1, 2, 3, 0.1, 0.2, 0.3, 0.4, 0.5);
-    // addToBuffer(testData);
-    // std::string temp = "";
-    // for (int i = 0; i < buffer1.index+1; i++) {
-    // }
-    
+    eMsg.addText("Failed to open log file. ");
     return;
   }
-  while (false) {
-    switchBuffer();
-    if (buffer1Active) {buffer1.mutex.lock();}
-    else {buffer2.mutex.lock();}
+  // while (false) {
+  //   switchBuffer();
+  //   if (buffer1Active) {buffer1.mutex.lock();}
+  //   else {buffer2.mutex.lock();}
     
-    std::array<uint64_t, 8192> data = buffer1Active ? buffer2.flushBuffer() : buffer1.flushBuffer();
-    if (buffer1Active) {buffer1.mutex.unlock();}
-    else {buffer2.mutex.unlock();}
+  //   std::array<uint64_t, 8192> data = buffer1Active ? buffer2.flushBuffer() : buffer1.flushBuffer();
+  //   if (buffer1Active) {buffer1.mutex.unlock();}
+  //   else {buffer2.mutex.unlock();}
     
-    fwrite(data.data(), sizeof(uint64_t), 8192, file);
-    fflush(file);
+  //   fwrite(data.data(), sizeof(uint64_t), 8192, file);
+  //   fflush(file);
     
-    pros::delay(100);
-  }
+  //   pros::delay(100);
+  // }
+
+  Data testData1(0, 1, 2, 3, 0.1, 0.2, 0.3, 0.4, 0.5);
+  addToBuffer(testData1);
+  fwrite(buffer1.bits.data(), sizeof(uint64_t), buffer1.index, file);
+  buffer1.clearBuffer();
+
+  Data testData2(0, 1, 2, 3, 0.1, 0.2, 0.3, 0.4, 0.5);
+  addToBuffer(testData2);
+  fwrite(buffer1.bits.data(), sizeof(uint64_t), buffer1.index, file);
+  buffer1.clearBuffer();
+
+  fflush(file);
+  fclose(file);
+  eMsg.addText("Test Logging complete. ");
 }

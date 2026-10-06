@@ -21,7 +21,7 @@ struct Buffer {
 
   void addToBuffer(Data &data);
 
-  std::array<uint64_t, 8192> flushBuffer();
+  void clearBuffer();
 };
 
 struct Logger {
