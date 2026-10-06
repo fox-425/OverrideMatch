@@ -11,6 +11,8 @@ extern pros::Motor M4;
 extern pros::Motor M5;
 extern pros::Motor M6;
 extern pros::Motor MI;
+extern pros::Motor MC1;
+extern pros::Motor MC2;
 
 namespace Printing {
   void init() {
@@ -29,22 +31,26 @@ namespace Printing {
   }
 
   void update() {
-    celMI = (uint8_t)MI.get_temperature();
     celM1 = (uint8_t)M1.get_temperature();
     celM2 = (uint8_t)M2.get_temperature();
     celM3 = (uint8_t)M3.get_temperature();
     celM4 = (uint8_t)M4.get_temperature();
     celM5 = (uint8_t)M5.get_temperature();
     celM6 = (uint8_t)M6.get_temperature();
+    celMI = (uint8_t)MI.get_temperature();
+    celMC1 = (uint8_t)MC1.get_temperature();
+    celMC2 = (uint8_t)MC2.get_temperature();
 
     pros::screen::print(pros::E_TEXT_SMALL, 0, "%05d", pros::millis());
     pros::screen::print(pros::E_TEXT_SMALL, 1, "%s", eMsg.content.c_str());
-    pros::screen::print(pros::E_TEXT_SMALL, 2, "%02d", celMI);
-    pros::screen::print(pros::E_TEXT_SMALL, 3, "%02d", celM1);
-    pros::screen::print(pros::E_TEXT_SMALL, 4, "%02d", celM2);
-    pros::screen::print(pros::E_TEXT_SMALL, 5, "%02d", celM3);
-    pros::screen::print(pros::E_TEXT_SMALL, 6, "%02d", celM4);
-    pros::screen::print(pros::E_TEXT_SMALL, 7, "%02d", celM5);
-    pros::screen::print(pros::E_TEXT_SMALL, 8, "%02d", celM6);
+    pros::screen::print(pros::E_TEXT_SMALL, 2, "%02d", celM1);
+    pros::screen::print(pros::E_TEXT_SMALL, 3, "%02d", celM2);
+    pros::screen::print(pros::E_TEXT_SMALL, 4, "%02d", celM3);
+    pros::screen::print(pros::E_TEXT_SMALL, 5, "%02d", celM4);
+    pros::screen::print(pros::E_TEXT_SMALL, 6, "%02d", celM5);
+    pros::screen::print(pros::E_TEXT_SMALL, 7, "%02d", celM6);
+    pros::screen::print(pros::E_TEXT_SMALL, 8, "%02d", celMI);
+    pros::screen::print(pros::E_TEXT_SMALL, 9, "%02d", celMC1);
+    pros::screen::print(pros::E_TEXT_SMALL, 10, "%02d", celMC2);
   }
 }
