@@ -13,6 +13,5 @@ public:
   Control(Drive& chassis, Controller& primary);
 
   uint8_t Buttons(uint8_t next);
-
-  void Arcade();
+  void Analog();
 };
