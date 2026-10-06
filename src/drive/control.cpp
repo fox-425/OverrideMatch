@@ -33,41 +33,34 @@ uint8_t Control::Buttons(uint8_t prev) {
   return next;
 }
 
-void Control::Arcade() {
-  int32_t LY = -primary.get_analog(E_CONTROLLER_ANALOG_LEFT_Y);
-  int32_t RX = primary.get_analog(E_CONTROLLER_ANALOG_RIGHT_X);
-  
-  LY = (float)LY * 94.4882f;
-  RX = (float)RX * 94.4882f;
-  if (LY > 12000) {
-    LY = 12000;
-  } else if (LY < -12000) {
-    LY = -12000;
-  }
-  if (RX > 12000) {
-    RX = 12000;
-  } else if (RX < -12000) {
-    RX = -12000;
-  }
-  
-  if (LY > 84.667f) {
-    LY = 2.0*(float)LY - 127;
-  } else if (LY < -84.667f) {
-    LY = 2.0*(float)LY + 127;
-  } else {
-    LY = 0.5*(float)LY;
-  }
+void Control::Analog() {
+  constexpr double AtoMV = 12000.0/127.0;
+  int32_t LY = AtoMV * (double)(-primary.get_analog(E_CONTROLLER_ANALOG_LEFT_Y));
+  int32_t RX = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_RIGHT_X));
+  int32_t LX = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_LEFT_X));
+  int32_t RY = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_RIGHT_Y));
 
-  float total = std::abs(LY) + std::abs(RX);
-
-  if (total > 12000.0f) {
-    float mult = 12000.0f / total;
+  if (LY > 254.0/3.0) {LY = 2*LY - 127;}
+  else if (LY < -84.667f) {LY = 2*LY + 127;}
+  else {LY /= 2;}
+  
+  int32_t total = std::abs(LY) + std::abs(RX);
+  if (total > 12000) {
+    double mult = 12000.0 / (double)total;
     LY *= mult;
     RX *= mult;
   }
-
-  float DL = LY + RX;
-  float DR = LY - RX;
-
+  double DL = LY + RX;
+  double DR = LY - RX;
   chassis.millivolts(std::round(DL), std::round(DR));
+
+  total = std::abs(LX) + std::abs(RY);
+  if (total > 12000) {
+    double mult = 12000.0/ (double)total;
+    LX *= mult;
+    RY *= mult;
+  }
+  double C1 = LX + RY;
+  double C2 = LX - RY;
+  chassis.cascade(std::round(C1), std::cascade(C2));
 }
