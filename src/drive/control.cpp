@@ -2,7 +2,7 @@
 #include "utils.h"
 
 Control::Control(Drive& chassis, Controller& primary):
-  chassis(chassis), primary(primary), R1(false)
+  chassis(chassis), primary(primary)
 {}
 
 uint8_t Control::Buttons(uint8_t prev) {
