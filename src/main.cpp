@@ -47,7 +47,7 @@ pros::Distance D2(D2Port);
 pros::Distance D3(D3Port);
 pros::Distance D4(D4Port);
 
-Drive chassis(M1, M2, M3, M4, M5, M6, MI, In1, In2);
+Drive chassis(M1, M2, M3, M4, M5, M6, MI, MC1, MC2, In1, In2);
 pros::Controller primary(pros::E_CONTROLLER_MASTER);
 Control control(chassis, primary);
 Logger logger;
