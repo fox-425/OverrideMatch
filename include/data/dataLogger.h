@@ -4,8 +4,8 @@
 #include <array>
 
 struct Data {
-  std::array<uint64_t, 7> data;
-  Data(uint32_t time, uint32_t RotY, uint32_t RotX, uint32_t RotC, double DI, double D1, double D2, double D3, double D4);
+  std::array<uint64_t, 10> data;
+  Data(uint32_t time, uint32_t RotY, uint32_t RotX, uint32_t RotC, double DI, double D1, double D2, double D3, double D4, double head, double x, double y);
 };
 
 struct PidData {
