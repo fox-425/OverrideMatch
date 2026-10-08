@@ -5,43 +5,13 @@
 extern EMSG eMsg;
 #define LOG_FILE_PATH "/usd/log.bin"
 
-Data::Data(uint32_t time, uint32_t RotY, uint32_t RotX, uint32_t RotC, double DI, double D1, double D2, double D3, double D4):
-  data({
-    (uint64_t)time | (uint64_t)RotY << 32,
-    (uint64_t)RotX | (uint64_t)RotC << 32,
-    std::bit_cast<uint64_t>(DI),
-    std::bit_cast<uint64_t>(D1),
-    std::bit_cast<uint64_t>(D2),
-    std::bit_cast<uint64_t>(D3),
-    std::bit_cast<uint64_t>(D4)
-  })
+Data::Data(uint32_t time, uint32_t RotY, uint32_t RotX, uint32_t RotC, double DI, double D1, double D2, double D3, double D4, double head, double x, double y):
+  time(time), RotY(RotY) RotX(RotX), RotC(RotC), DI(DI), D1(D1), D2(D2), D3(D3), D4(D4), head(head), x(x), y(y)
 {}
 
-PidData::PidData(uint8_t id, uint32_t p, uint32_t i, uint32_t d):
-  id(id),
-  pidData({
-    (uint64_t)p | (uint64_t)i << 32,
-    (uint64_t)d
-  })
+PidData::PidData(uint32_t time, uint8_t id, float p, float i, float d):
+  time(time), id(id), p(p), i(i), d(d)
 {}
-
-void PidData::addPID(uint32_t p, uint32_t i, uint32_t d) {
-  if (pidCount == 8) {
-    // send error to screenwriter
-    return;
-  }
-  uint8_t sel = (uint8_t) ((double)pidCount*3.0/2.0);
-  if (pidCount%2 == 0) {
-    pidData[sel] = (uint64_t)p << 32;
-    pidData[sel] |= (uint64_t)i;
-    pidData[sel+1] = (uint64_t)d << 32;
-  } else {
-    pidData[sel] |= (uint64_t)p;
-    pidData[sel+1] = (uint64_t)i << 32;
-    pidData[sel+1] |= (uint64_t)d;
-  }
-  pidCount++;
-}
 
 Buffer::Buffer():
   bits{},
@@ -49,73 +19,46 @@ Buffer::Buffer():
 {}
 
 void Buffer::addToBuffer(Data &data) {
-  uint16_t select = (uint16_t) (index/64);
-  uint8_t next = (uint8_t) (index%64);
-  if (next != 0) {
-    for (int i = 0; i < 7; i++) {
-      bits[select+i] |= data.data[i] >> next;
-      bits[select+i+1] = data.data[i] << 64-next;
-    }
-  } else {
-    for (int i = 0; i < 7; i++) {
-      bits[select+i] = data.data[i];
-    }
-  }
-  index += 448;
-  select = (uint16_t) (index/64);
-  next = (uint8_t) (index%64);
-  if (data.pidCount == 0) {
-    index++;
-  } else {
-    uint64_t pidCountData = (uint64_t) (data.pidCount+7) << 60;
-    if (next <= 60) {
-      bits[select] |= pidCountData >> next;
-    } else {
-      bits[select] |= pidCountData >> next;
-      bits[select+1] = pidCountData << 64-next;
-    }
-    index += 4;
-    select = (uint16_t) (index/64);
-    next = (uint8_t) (index%64);
-    int loops = (int) (((double)data.pidCount * 3.0+1)/2.0);
-    if (next != 0) {
-      for (int i = 0; i < loops; i++) {
-        bits[select+i] |= data.pidData[i] >> next;
-        bits[select+i+1] = data.pidData[i] << 64-next;
-      }
-    } else {
-      for (int i = 0; i < loops; i++) {
-        bits[select+i] = data.pidData[i];
-      }
-    }
-    index += 96*data.pidCount;
-  }
+  arr[index] = data;
+  index++;
+}
+
+void PidBuffer::addToBuffer(PidData &data) {
+  arr[index] = data;
+  index++;
 }
 
 void Buffer::clearBuffer() {
   index = 0;
-  bits.fill(0);
+  arr.fill(0);
+}
+
+void PidBuffer::clearBuffer() {
+  index = 0;
+  arr.fill(0);
 }
 
 Logger::Logger():
-  buffer1Active(true),
-  buffer1(Buffer()),
-  buffer2(Buffer())
+  bufferActive(true),
+  B1(Buffer()),
+  B2(Buffer()),
+  PB1(PidBuffer()),
+  PB2(PidBuffer())
 {}
 
 void Logger::switchBuffer() {
-  buffer1Active = !buffer1Active;
+  bufferActive = !bufferActive;
 }
 
 void Logger::addToBuffer(Data &data) {
-  if (buffer1Active) {
-    buffer1.mutex.lock();
-    buffer1.addToBuffer(data);
-    buffer1.mutex.unlock();
+  if (bufferActive) {
+    B1.mutex.lock();
+    B1.addToBuffer(data);
+    B1.mutex.unlock();
   } else {
-    buffer2.mutex.lock();
-    buffer2.addToBuffer(data);
-    buffer2.mutex.unlock();
+    B2.mutex.lock();
+    B2.addToBuffer(data);
+    B2.mutex.unlock();
   }
 }
 
@@ -146,15 +89,15 @@ void Logger::logToSD() {
   //   pros::delay(100);
   // }
 
-  Data testData1(0, 1, 2, 3, 0.1, 0.2, 0.3, 0.4, 0.5);
+  Data testData1(0, 1, 2, 3, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8);
   addToBuffer(testData1);
-  fwrite(buffer1.bits.data(), sizeof(uint64_t), buffer1.index, file);
-  buffer1.clearBuffer();
+  fwrite(B1.arr.data(), sizeof(Buffer), B1.index, file);
+  B1.clearBuffer();
 
-  Data testData2(0, 1, 2, 3, 0.1, 0.2, 0.3, 0.4, 0.5);
+  PidData testData2(0, 1, 0.1, 0.2, 0.3);
   addToBuffer(testData2);
-  fwrite(buffer1.bits.data(), sizeof(uint64_t), buffer1.index, file);
-  buffer1.clearBuffer();
+  fwrite(PB1.bits.data(), sizeof(PidBuffer), PB1.index, file);
+  PB1.clearBuffer();
 
   fflush(file);
   fclose(file);
