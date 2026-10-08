@@ -9,9 +9,9 @@ struct Data {
 };
 
 struct PidData {
+  uint32_t time;
   uint8_t id;
-  std::array<uint64_t, 12> pidData;
-  PidData(uint8_t id, uint32_t p, uint32_t i, uint32_t d);
+  PidData(uint32_t time, uint8_t id, uint32_t p, uint32_t i, uint32_t d);
 };
 
 struct Buffer {
@@ -27,8 +27,8 @@ struct Buffer {
 };
 
 struct PidBuffer {
-  std::array<uint64_t, 1024> bits;
-  uint16_t index;
+  std::array<PidData, 100> bits;
+  uint8_t index;
   pros::Mutex mutex;
 
   PidBuffer();
