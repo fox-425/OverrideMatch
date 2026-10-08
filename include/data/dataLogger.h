@@ -22,10 +22,10 @@ struct Data {
 struct PidData {
   uint32_t time;
   uint8_t id;
-  uint32_t p;
-  uint32_t i;
-  uint32_t d;
-  PidData(uint32_t time, uint8_t id, uint32_t p, uint32_t i, uint32_t d);
+  float p;
+  float i;
+  float d;
+  PidData(uint32_t time, uint8_t id, float p, float i, float d);
 };
 
 struct Buffer {
