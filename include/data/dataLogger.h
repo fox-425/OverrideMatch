@@ -49,7 +49,7 @@ struct PidBuffer {
 };
 
 struct Logger {
-  bool buffer1Active = true;
+  uint8_t bufferActive;
   Buffer B1;
   Buffer B2;
   PidBuffer PB1;
