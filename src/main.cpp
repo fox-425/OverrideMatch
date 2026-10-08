@@ -177,7 +177,7 @@ void opcontrol() {
 
   uint8_t prev = 0;
   while (true) {
-    control.Arcade();
+    control.Analog();
     prev = control.Buttons(prev);
 
     pros::delay(10);

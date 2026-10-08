@@ -60,7 +60,7 @@ void Control::Analog() {
     LX *= mult;
     RY *= mult;
   }
-  double C1 = LX + RY;
-  double C2 = LX - RY;
-  chassis.cascade(std::round(C1), std::cascade(C2));
+  double C1 = RY + LX;
+  double C2 = RY - LX;
+  chassis.cascade(std::round(C1), std::round(C2));
 }

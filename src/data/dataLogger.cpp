@@ -6,20 +6,26 @@ extern EMSG eMsg;
 #define LOG_FILE_PATH "/usd/log.bin"
 
 Data::Data(uint32_t time, uint32_t RotY, uint32_t RotX, uint32_t RotC, double DI, double D1, double D2, double D3, double D4):
-  pidCount(0),
   data({
-    (uint64_t)time << 32 | (uint64_t)RotY,
-    (uint64_t)RotX << 32 | (uint64_t)RotC,
+    (uint64_t)time | (uint64_t)RotY << 32,
+    (uint64_t)RotX | (uint64_t)RotC << 32,
     std::bit_cast<uint64_t>(DI),
     std::bit_cast<uint64_t>(D1),
     std::bit_cast<uint64_t>(D2),
     std::bit_cast<uint64_t>(D3),
     std::bit_cast<uint64_t>(D4)
-  }),
-  pidData{}
+  })
 {}
 
-void Data::addPID(uint32_t p, uint32_t i, uint32_t d) {
+PidData::PidData(uint8_t id, uint32_t p, uint32_t i, uint32_t d):
+  id(id),
+  pidData({
+    (uint64_t)p | (uint64_t)i << 32,
+    (uint64_t)d
+  })
+{}
+
+void PidData::addPID(uint32_t p, uint32_t i, uint32_t d) {
   if (pidCount == 8) {
     // send error to screenwriter
     return;

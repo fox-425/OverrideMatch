@@ -5,11 +5,13 @@
 
 struct Data {
   std::array<uint64_t, 7> data;
-  uint8_t pidCount;
-  std::array<uint64_t, 12> pidData;
-
   Data(uint32_t time, uint32_t RotY, uint32_t RotX, uint32_t RotC, double DI, double D1, double D2, double D3, double D4);
-  void addPID(uint32_t p, uint32_t i, uint32_t d);
+};
+
+struct PidData {
+  uint8_t id;
+  std::array<uint64_t, 12> pidData;
+  PidData(uint8_t id, uint32_t p, uint32_t i, uint32_t d);
 };
 
 struct Buffer {
@@ -24,16 +26,30 @@ struct Buffer {
   void clearBuffer();
 };
 
+struct PidBuffer {
+  std::array<uint64_t, 1024> bits;
+  uint32_t index;
+  pros::Mutex mutex;
+
+  PidBuffer();
+
+  void addToBuffer(PidData &data);
+
+  void clearBuffer();
+};
+
 struct Logger {
   bool buffer1Active = true;
-  Buffer buffer1;
-  Buffer buffer2;
-  pros::Mutex logMutex;
+  Buffer B1;
+  Buffer B2;
+  PidBuffer PB1;
+  PidBuffer PB2;
 
   Logger();
 
   void switchBuffer();
   void addToBuffer(Data &data);
+  void addToBuffer(PidData &data);
 
   void startLogging();
   void logToSD();
