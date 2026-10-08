@@ -4,7 +4,18 @@
 #include <array>
 
 struct Data {
-  std::array<uint64_t, 10> data;
+  uint32_t time;
+  uint32_t RotY;
+  uint32_t RotX;
+  uint32_t RotC;
+  double DI;
+  double D1;
+  double D2;
+  double D3;
+  double D4;
+  double head;
+  double x;
+  double y;
   Data(uint32_t time, uint32_t RotY, uint32_t RotX, uint32_t RotC, double DI, double D1, double D2, double D3, double D4, double head, double x, double y);
 };
 
@@ -18,26 +29,22 @@ struct PidData {
 };
 
 struct Buffer {
-  std::array<uint64_t, 1024> bits;
-  uint16_t index;
+  std::array<Data, 128> arr;
+  uint8_t index;
   pros::Mutex mutex;
-
   Buffer();
 
   void addToBuffer(Data &data);
-
   void clearBuffer();
 };
 
 struct PidBuffer {
-  std::array<PidData, 100> bits;
+  std::array<PidData, 128> arr;
   uint8_t index;
   pros::Mutex mutex;
-
   PidBuffer();
 
   void addToBuffer(PidData &data);
-
   void clearBuffer();
 };
 
@@ -47,7 +54,6 @@ struct Logger {
   Buffer B2;
   PidBuffer PB1;
   PidBuffer PB2;
-
   Logger();
 
   void switchBuffer();
