@@ -62,7 +62,7 @@ Logger logger;
  */
 void initialize() {
   Printing::init();
-  logger.startLogging();
+  // logger.startLogging();
 	pros::delay(2000);
 }
 

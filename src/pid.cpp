@@ -1,4 +1,8 @@
 #include "pid.h"
+#include "data/dataLogger.h"
+
+extern Logger logger;
+uint16_t PID::nextID = 1;
 
 PID::PIDoutput::PIDoutput():
   p(0.0f), i(0.0f), d(0.0f), out(0.0f)
@@ -8,7 +12,8 @@ PID::PIDoutput::PIDoutput(float p, float i, float d):
   p(p), i(i), d(d), out(p+i+d)
 {}
 
-PID::PID(float target, float kp, float ki, float kd):
+PID::PID(float target, float kp, float ki, float kd, bool useID):
+  ID(useID ? nextID : 0),
   target(target), kp(kp), ki(ki), kd(kd),
   iMax(0.0), iRange(0.0),
   dRange(1.0),
@@ -17,7 +22,9 @@ PID::PID(float target, float kp, float ki, float kd):
   sumError(0.0), prevError(0.0), output(0.0),
   rangeTime1(0), rangeTime2(0),
   firstTime(true), atTarget(false)
-{}
+{
+  if (useID) {nextID++;}
+}
 
 void PID::setExit(float dRange, float errorRange1, float errorRange2, uint32_t errorTime1, uint32_t errorTime2) {
   this->dRange = dRange;
@@ -111,5 +118,9 @@ PID::PIDoutput PID::update(int32_t time, float input) {
 
   PIDoutput output(p, i, d);
   prevError = error;
+
+  if (ID != 0) {
+    logger.addToBuffer(PidData(time, p, i, d, target, ID));
+  }
   return output;
 }

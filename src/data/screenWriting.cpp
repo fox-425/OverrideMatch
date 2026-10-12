@@ -52,5 +52,8 @@ namespace Printing {
     pros::screen::print(pros::E_TEXT_SMALL, 8, "%02d", celMI);
     pros::screen::print(pros::E_TEXT_SMALL, 9, "%02d", celMC1);
     pros::screen::print(pros::E_TEXT_SMALL, 10, "%02d", celMC2);
+
+    // pros::screen::draw_pixel(479, 0);
+    // pros::screen::draw_pixel(479, 239);
   }
 }

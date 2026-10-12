@@ -3,6 +3,8 @@
 #include <cstdint>
 
 class PID {
+  static uint16_t nextID;
+  uint16_t ID;
   float target;
   float kp;
   float ki;
@@ -36,7 +38,7 @@ public:
     PIDoutput(float p, float i, float d);
   };
 
-  PID(float target, float kp, float ki, float kd);
+  PID(float target, float kp, float ki, float kd, bool useID = true);
 
   /**
    * @param dRange When derivative value <= dRange, the pid begins to check if the pid is inside the error ranges
