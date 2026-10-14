@@ -38,6 +38,13 @@ public:
     PIDoutput(float p, float i, float d);
   };
 
+  /**
+   * @param target The target value for the pid to reach
+   * @param kp The proportional gain for the pid
+   * @param ki The integral gain for the pid
+   * @param kd The derivative gain for the pid
+   * @param useID Whether to use the ID for logging
+  */
   PID(float target, float kp, float ki, float kd, bool useID = true);
 
   /**

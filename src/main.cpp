@@ -46,8 +46,13 @@ pros::Distance D1(D1Port);
 pros::Distance D2(D2Port);
 pros::Distance D3(D3Port);
 pros::Distance D4(D4Port);
+pros::Rotation RY(21);
+pros::Rotation RX(21);
+pros::Rotation RC(16);
 
-Drive chassis(M1, M2, M3, M4, M5, M6, MI, MC1, MC2, In1, In2);
+Motor MT(20, MotorGearset::blue);
+
+Drive chassis(M1, M2, M3, M4, M5, M6, MI, MC1, MC2, RC, In1, In2);
 pros::Controller primary(pros::E_CONTROLLER_MASTER);
 Control control(chassis, primary);
 Logger logger;
@@ -63,6 +68,7 @@ Logger logger;
 void initialize() {
   Printing::init();
   // logger.startLogging();
+  chassis.initDiff();
 	pros::delay(2000);
 }
 

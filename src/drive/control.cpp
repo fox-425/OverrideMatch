@@ -34,6 +34,7 @@ uint8_t Control::Buttons(uint8_t prev) {
 }
 
 void Control::Analog() {
+  bool disableDrive = true;
   constexpr double AtoMV = 12000.0/127.0;
   int32_t LY = AtoMV * (double)(-primary.get_analog(E_CONTROLLER_ANALOG_LEFT_Y));
   int32_t RX = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_RIGHT_X));
@@ -52,6 +53,10 @@ void Control::Analog() {
   }
   double DL = LY + RX;
   double DR = LY - RX;
+  if (disableDrive) {
+    DL = 0;
+    DR = 0;
+  }
   chassis.millivolts(std::round(DL), std::round(DR));
 
   total = std::abs(LX) + std::abs(RY);
@@ -60,7 +65,6 @@ void Control::Analog() {
     LX *= mult;
     RY *= mult;
   }
-  double C1 = RY + LX;
-  double C2 = RY - LX;
-  chassis.cascade(std::round(C1), std::round(C2));
+  chassis.setDiffTar(std::round(LX*2.0));
+  chassis.cascade(std::round(RY), std::round(RY));
 }

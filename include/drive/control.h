@@ -3,6 +3,7 @@
 #include "pros/motors.hpp"
 #include "pros/adi.hpp"
 #include "pros/misc.hpp"
+#include "pid.h"
 
 class Control {
 public:

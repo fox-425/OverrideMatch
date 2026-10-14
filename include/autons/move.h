@@ -63,6 +63,14 @@ namespace Move {
     float min_output = 0.0f, float max_output = 12.0f
   );
 
+  /**
+   * @brief Moves the robot to a specific point in the field
+   * @param x, y: Coordinates of the target point.
+   * @param rev: If true, the robot will move backward to the point.
+   * @param time_limit_msec: Maximum time allowed for the movement (in milliseconds).
+   * @param chain: If true, the slew rates will change
+   * @param stop: 
+  */
   void moveToPoint(
     double x, double y, bool rev, uint32_t time_limit_msec, bool chain, bool stop,
     float d_kp, float d_ki, float d_kd, float h_kp, float h_ki, float h_kd,
@@ -70,5 +78,31 @@ namespace Move {
     float min_output = 0.0f, float max_output = 12.0f,
     float max_accel = 12.0f, float max_decel = 12.0f
   );
-
+/*
+  void swing(
+    double turn_kp, double turn_ki, double turn_kd,
+    double swing_angle, double drive_direction, double time_limit_msec,
+    bool exit = true,
+    double min_output = 0, double max_output = 12
+  );
+/*
+  void curveCircle(
+    double result_angle_deg, double center_radius, double time_limit_msec, bool exit,
+    double distance_kp, double distance_ki, double distance_kd,
+    double heading_correction_kp, double heading_correction_ki, double heading_correction_kd,
+    bool dir_change_start = true, bool dir_change_end = true,
+    double min_output = 0, double max_output = 12,
+    double max_slew_accel_fwd = 12, double max_slew_decel_rev = 12, double max_slew_decel_fwd = 12, double max_slew_accel_rev = 12
+  );
+/*
+  void boomerang(
+    double x, double y, int dir, double a, double dlead, double time_limit_msec,
+    double distance_kp, double distance_ki, double distance_kd,
+    double heading_correction_kp, double heading_correction_ki, double heading_correction_kd,
+    double chase_power = 2,
+    bool overturn = false, bool exit = true, bool dir_change_start = true, bool dir_change_end = true,
+    double min_output = 0, double max_output = 12,
+    double max_slew_accel_fwd = 12, double max_slew_decel_rev = 12, double max_slew_decel_fwd = 12, double max_slew_accel_rev = 12
+  );
+*/
 }
