@@ -14,13 +14,11 @@
 #include <cmath>
 #include <arm_neon.h>
 
-int8_t M1Port = 1;
-int8_t M2Port = 2;
-int8_t M3Port = -3;
-int8_t M4Port = -11;
-int8_t M5Port = -12;
-int8_t M6Port = 13;
-int8_t MIPort = 5;
+int8_t M1Port = -1;
+int8_t M2Port = -2;
+int8_t M3Port = 3;
+int8_t M4Port = 11;
+int8_t MIPort = -5;
 int8_t MC1Port = 14;
 int8_t MC2Port = -15;
 int8_t D1Port = 21;
@@ -35,8 +33,6 @@ Motor M1(M1Port, MotorGearset::blue);
 Motor M2(M2Port, MotorGearset::blue);
 Motor M3(M3Port, MotorGearset::blue);
 Motor M4(M4Port, MotorGearset::blue);
-Motor M5(M5Port, MotorGearset::blue);
-Motor M6(M6Port, MotorGearset::blue);
 Motor MI(MIPort, MotorGearset::blue);
 Motor MC1(MC1Port, MotorGearset::blue);
 Motor MC2(MC2Port, MotorGearset::blue);
@@ -50,9 +46,9 @@ pros::Rotation RY(21);
 pros::Rotation RX(21);
 pros::Rotation RC(16);
 
-Motor MT(20, MotorGearset::blue);
+// Motor MT(20, MotorGearset::blue);
 
-Drive chassis(M1, M2, M3, M4, M5, M6, MI, MC1, MC2, RC, In1, In2);
+Drive chassis(M1, M2, M3, M4, MI, MC1, MC2, RC, In1, In2);
 pros::Controller primary(pros::E_CONTROLLER_MASTER);
 Control control(chassis, primary);
 Logger logger;
@@ -66,6 +62,10 @@ Logger logger;
  * to keep execution time for this mode under a few seconds.
  */
 void initialize() {
+  M1.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+  M2.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+  M3.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+  M4.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
   Printing::init();
   // logger.startLogging();
   chassis.initDiff();

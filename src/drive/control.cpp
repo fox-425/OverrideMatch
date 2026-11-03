@@ -34,37 +34,29 @@ uint8_t Control::Buttons(uint8_t prev) {
 }
 
 void Control::Analog() {
-  bool disableDrive = true;
+  bool disableDrive = false;
   constexpr double AtoMV = 12000.0/127.0;
-  int32_t LY = AtoMV * (double)(-primary.get_analog(E_CONTROLLER_ANALOG_LEFT_Y));
-  int32_t RX = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_RIGHT_X));
-  int32_t LX = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_LEFT_X));
-  int32_t RY = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_RIGHT_Y));
+  double LY = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_LEFT_Y));
+  double RX = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_RIGHT_X));
+  double LX = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_LEFT_X));
+  double RY = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_RIGHT_Y));
 
-  if (LY > 254.0/3.0) {LY = 2*LY - 127;}
-  else if (LY < -84.667f) {LY = 2*LY + 127;}
-  else {LY /= 2;}
-  
-  int32_t total = std::abs(LY) + std::abs(RX);
-  if (total > 12000) {
-    double mult = 12000.0 / (double)total;
-    LY *= mult;
-    RX *= mult;
-  }
-  double DL = LY + RX;
-  double DR = LY - RX;
-  if (disableDrive) {
-    DL = 0;
-    DR = 0;
-  }
-  chassis.millivolts(std::round(DL), std::round(DR));
+  double strafe = 0;
+  double fwd = 0;
+  double turn = 0;
 
-  total = std::abs(LX) + std::abs(RY);
-  if (total > 12000) {
-    double mult = 12000.0/ (double)total;
-    LX *= mult;
-    RY *= mult;
+  double mv1 = fwd + strafe + turn;
+  double mv2 = fwd - strafe - turn;
+  double mv3 = fwd + strafe - turn;
+  double mv4 = fwd - strafe + turn;
+  double max = std::max({std::abs(mv1), std::abs(mv2), std::abs(mv3), std::abs(mv4)});
+  if (max > 12000) {
+    double mult = 12000.0 / max;
+    mv1 *= mult;
+    mv2 *= mult;
+    mv3 *= mult;
+    mv4 *= mult;
   }
-  chassis.setDiffTar(std::round(LX*2.0));
-  chassis.cascade(std::round(RY), std::round(RY));
+  if (disableDrive) {mv1 = 0;mv2 = 0;mv3 = 0;mv4 = 0;}
+  chassis.millivolts((int32_t)mv1, (int32_t)mv2, (int32_t)mv3, (int32_t)mv4);
 }
