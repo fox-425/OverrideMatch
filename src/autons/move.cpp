@@ -6,8 +6,20 @@ extern Tracker tracker;
 
 namespace Move {
   namespace MU {
-    void driveChassis(float left_power, float right_power) {
-      chassis.millivolts(left_power*1000, right_power*1000);
+    void driveChassis(float fwrd, float side, float turn) {
+      double mv1 = fwrd + side + turn;
+      double mv2 = fwrd - side - turn;
+      double mv3 = fwrd + side - turn;
+      double mv4 = fwrd - side + turn;
+      double max = std::max({std::abs(mv1), std::abs(mv2), std::abs(mv3), std::abs(mv4)});
+      if (max > 12000) {
+        double mult = 12000.0 / max;
+        mv1 *= mult;
+        mv2 *= mult;
+        mv3 *= mult;
+        mv4 *= mult;
+      }
+      chassis.millivolts(mv1, mv2, mv3, mv4);
     }
 
     float normalizeTarget(float angle) {
@@ -22,14 +34,6 @@ namespace Move {
 
     float getInertialHeading() {
       return static_cast<float>(inert.get_rotation());
-    }
-
-    float getLeftRotationDegree() {
-      return chassis.getPosition(-1);
-    }
-
-    float getRightRotationDegree() {
-      return chassis.getPosition(1);
     }
 
     double getX() {
@@ -104,7 +108,7 @@ namespace Move {
       pid.setTarget(correct_angle);
       if(!is_turning) {
         output = pid.update(pros::millis(), MU::getInertialHeading());
-        MU::driveChassis(output.out, -output.out);
+        MU::driveChassis(0, 0, output.out);
       }
       pros::delay(10);
     }
@@ -138,7 +142,7 @@ namespace Move {
       output = pid.update(pros::millis(), current_heading);
 
       output.out = MU::absClamp(output.out, min_output, max_output);
-      MU::driveChassis(output.out, -output.out);
+      MU::driveChassis(0, 0, output.out);
 
       pros::delay(10);
     }
@@ -179,7 +183,7 @@ namespace Move {
       output = pid.update(pros::millis(), current_heading);
 
       output.out = MU::absClamp(output.out, min_output, max_output);
-      MU::driveChassis(output.out, -output.out);
+      MU::driveChassis(0, 0, output.out);
 
       pros::delay(10);
     }
@@ -298,7 +302,7 @@ namespace Move {
       }
       prev_left_output = left_output;
       prev_right_output = right_output;
-      MU::driveChassis(left_output, right_output); // Apply output to chassis
+      // MU::driveChassis(left_output, right_output); // Apply output to chassis
       pros::delay(10);
     }
     correct_angle = MU::getInertialHeading(); // Update global heading

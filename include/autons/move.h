@@ -6,11 +6,9 @@
 
 namespace Move {
   namespace MU {
-    void driveChassis(float left_power, float right_power);
+    void driveChassis(float fwrd, float side, float turn);
     float normalizeTarget(float angle);
     float getInertialHeading();
-    float getLeftRotationDegree();
-    float getRightRotationDegree();
     double getX();
     double getY();
     void scaleToMin(float& left_output, float& right_output, float min_output);

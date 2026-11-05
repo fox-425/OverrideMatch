@@ -41,9 +41,9 @@ void Control::Analog() {
   double LX = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_LEFT_X));
   double RY = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_RIGHT_Y));
 
-  double strafe = 0;
-  double fwd = 0;
-  double turn = 0;
+  double fwd = LY;
+  double strafe = LX;
+  double turn = RX;
 
   double mv1 = fwd + strafe + turn;
   double mv2 = fwd - strafe - turn;
@@ -59,4 +59,6 @@ void Control::Analog() {
   }
   if (disableDrive) {mv1 = 0;mv2 = 0;mv3 = 0;mv4 = 0;}
   chassis.millivolts((int32_t)mv1, (int32_t)mv2, (int32_t)mv3, (int32_t)mv4);
+
+  chassis.cascade((int32_t)RY);
 }

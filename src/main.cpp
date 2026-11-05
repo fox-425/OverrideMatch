@@ -15,12 +15,12 @@
 #include <arm_neon.h>
 
 int8_t M1Port = -1;
-int8_t M2Port = -2;
-int8_t M3Port = 3;
-int8_t M4Port = 11;
-int8_t MIPort = -5;
-int8_t MC1Port = 14;
-int8_t MC2Port = -15;
+int8_t M2Port = 10;
+int8_t M3Port = 11;
+int8_t M4Port = -20;
+int8_t MC1Port = 2;
+int8_t MC2Port = -3;
+int8_t MC3Port = 4;
 int8_t D1Port = 21;
 int8_t D2Port = 21;
 int8_t D3Port = 21;
@@ -33,9 +33,9 @@ Motor M1(M1Port, MotorGearset::blue);
 Motor M2(M2Port, MotorGearset::blue);
 Motor M3(M3Port, MotorGearset::blue);
 Motor M4(M4Port, MotorGearset::blue);
-Motor MI(MIPort, MotorGearset::blue);
 Motor MC1(MC1Port, MotorGearset::blue);
 Motor MC2(MC2Port, MotorGearset::blue);
+Motor MC3(MC3Port, MotorGearset::blue);
 pros::adi::DigitalOut In1(In1_3Wire);
 pros::adi::DigitalOut In2(In2_3Wire);
 pros::Distance D1(D1Port);
@@ -48,7 +48,7 @@ pros::Rotation RC(16);
 
 // Motor MT(20, MotorGearset::blue);
 
-Drive chassis(M1, M2, M3, M4, MI, MC1, MC2, RC, In1, In2);
+Drive chassis(M1, M2, M3, M4, MC1, MC2, MC3, RC, In1, In2);
 pros::Controller primary(pros::E_CONTROLLER_MASTER);
 Control control(chassis, primary);
 Logger logger;
