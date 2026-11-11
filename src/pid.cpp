@@ -83,19 +83,10 @@ PID::PIDoutput PID::update(int32_t time, float input) {
   float d = kd * (error-prevError);
 
   float abs_error = std::fabs(error);
+  sumError = (iRange != 0 && abs_error >= iRange) ? 0.0f : sumError+error;
   int32_t sign_sumError = utils::sign(sumError);
-  if (iRange != 0 && abs_error >= iRange) {
-    sumError = 0.0f;
-  } else {
-    sumError += error;
-    if (iMax != 0 && fabs(sumError)*ki > iMax) {
-      sumError = (float)sign_sumError * iMax/ki;
-    }
-  }
-
-  if (utils::sign(error) != sign_sumError || abs_error <= errorRange1) {
-    sumError = 0.0f;
-  }
+  if (iMax != 0 && fabs(sumError)*ki > iMax) {sumError = (float)sign_sumError * iMax/ki;}
+  if (utils::sign(error) != sign_sumError || abs_error <= errorRange1) {sumError = 0.0f;}
 
   float i = ki * sumError;
 

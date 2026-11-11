@@ -6,7 +6,7 @@
 
 namespace Move {
   namespace MU {
-    void driveChassis(float fwrd, float side, float turn);
+    void driveChassis(float fwrd, float side, float turn, float accel = 0, float decel = 0, MVs* pMVs = nullptr);
     float normalizeTarget(float angle);
     float getInertialHeading();
     double getX();
@@ -38,14 +38,16 @@ namespace Move {
    * @brief Turns the robot to a specified angle using PID control.
    * @param turn_angle: Target angle to turn to (in degrees).
    * @param time_limit_msec: Maximum time allowed for the turn (in milliseconds).
-   * @param overshoot: If true, overshooting the target exits; if false, follows normal behavior.
-   * @param max_output: Maximum voltage output to motors.
+   * @param overshoot: If true, exit after passing the target; if false, will correct towards the target after passing.
+   * @param stop: If true, the robot will stop after the turn.
+   * @param min_output: Minimum millivolts
+   * @param max_output: Maximum millivolts
    */
   void turnToAngle(
     float turn_angle, uint32_t time_limit_msec, bool overshoot,
     float kp, float ki, float kd,
     float dRange = 4.5f, float errorRange1 = 1.0f, float errorRange2 = 3.0f, uint32_t errorTime1 = 50, uint32_t errorTime2 = 250,
-    float min_output = 0.0f, float max_output = 12.0f
+    bool stop = true, float min_output = 0.0f, float max_output = 12.0f
   );
 
   /**

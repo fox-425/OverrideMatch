@@ -5,8 +5,8 @@
 extern EMSG eMsg;
 #define LOG_FILE_PATH "/usd/log.bin"
 
-Data::Data(uint32_t time, uint32_t RotY, uint32_t RotX, uint32_t RotC, double DI, double D1, double D2, double D3, double D4, double head, double x, double y):
-  time(time), RotY(RotY), RotX(RotX), RotC(RotC), DI(DI), D1(D1), D2(D2), D3(D3), D4(D4), head(head), x(x), y(y)
+Data::Data(uint32_t time, uint32_t RotY, uint32_t RotX, double DI, double D1, double D2, double D3, double D4, double head, double x, double y):
+  time(time), RotY(RotY), RotX(RotX), DI(DI), D1(D1), D2(D2), D3(D3), D4(D4), head(head), x(x), y(y)
 {}
 
 PidData::PidData(uint32_t time, float p, float i, float d, float tar, uint16_t id):
@@ -18,7 +18,7 @@ AutonData::AutonData(uint32_t time, uint8_t type, uint16_t id):
 {}
 
 Data::Data():
-  time(0), RotY(0), RotX(0), RotC(0), DI(0.0), D1(0.0), D2(0.0), D3(0.0), D4(0.0), head(0.0), x(0.0), y(0.0)
+  time(0), RotY(0), RotX(0), DI(0.0), D1(0.0), D2(0.0), D3(0.0), D4(0.0), head(0.0), x(0.0), y(0.0)
 {}
 
 PidData::PidData():
@@ -61,25 +61,28 @@ void AutonBuffer::addToBuffer(AutonData &data) {
 
 void Buffer::clearBuffer() {
   index = 0;
-  arr.fill(Data(0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
+  arr.fill(Data());
 }
 
 void PidBuffer::clearBuffer() {
   index = 0;
-  arr.fill(PidData(0, 0, 0.0, 0.0, 0.0, 0));
+  arr.fill(PidData());
 }
 
 void AutonBuffer::clearBuffer() {
   index = 0;
-  arr.fill(AutonData(0, 0, 0));
+  arr.fill(AutonData());
 }
 
 Logger::Logger():
+  sdActive(false),
   bufferActive(true),
   B1(Buffer()),
   B2(Buffer()),
   PB1(PidBuffer()),
-  PB2(PidBuffer())
+  PB2(PidBuffer()),
+  AB1(AutonBuffer()),
+  AB2(AutonBuffer())
 {}
 
 void Logger::switchBuffer() {
@@ -87,6 +90,7 @@ void Logger::switchBuffer() {
 }
 
 void Logger::addToBuffer(Data &data) {
+  if (!sdActive) {return;}
   if (bufferActive) {
     B1.mutex.lock();
     B1.addToBuffer(data);
@@ -99,6 +103,7 @@ void Logger::addToBuffer(Data &data) {
 }
 
 void Logger::addToBuffer(PidData &data) {
+  if (!sdActive) {return;}
   if (bufferActive) {
     PB1.mutex.lock();
     PB1.addToBuffer(data);
@@ -111,6 +116,7 @@ void Logger::addToBuffer(PidData &data) {
 }
 
 void Logger::addToBuffer(AutonData &data) {
+  if (!sdActive) {return;}
   if (bufferActive) {
     AB1.mutex.lock();
     AB1.addToBuffer(data);
@@ -139,45 +145,56 @@ void Logger::logToSD() {
     eMsg.addText("Failed to open log file. ");
     return;
   }
-  // while (false) {
-  //   switchBuffer();
-  //   if (buffer1Active) {buffer1.mutex.lock();}
-  //   else {buffer2.mutex.lock();}
+  sdActive = true;
+  eMsg.addText("Opened log file. ");
+  while (true) {
+    if (bufferActive) {B2.mutex.lock();}
+    else {B1.mutex.lock();}
+  
+    fwrite((bufferActive ? B2.arr : B1.arr).data(), sizeof(Data), bufferActive ? B2.index : B1.index, file);
+    fwrite((bufferActive ? PB2.arr : PB1.arr).data(), sizeof(PidData), bufferActive ? PB2.index : PB1.index, file);
+    fwrite((bufferActive ? AB2.arr : AB1.arr).data(), sizeof(AutonData), bufferActive ? AB2.index : AB1.index, file);
+    if (bufferActive) {
+      B2.clearBuffer();
+      PB2.clearBuffer();
+      AB2.clearBuffer();
+    } else {
+      B1.clearBuffer();
+      PB1.clearBuffer();
+      AB1.clearBuffer();
+    }
+    if (bufferActive) {B2.mutex.unlock();}
+    else {B1.mutex.unlock();}
+    switchBuffer();
+    fflush(file);
     
-  //   std::array<uint64_t, 8192> data = buffer1Active ? buffer2.flushBuffer() : buffer1.flushBuffer();
-  //   if (buffer1Active) {buffer1.mutex.unlock();}
-  //   else {buffer2.mutex.unlock();}
-    
-  //   fwrite(data.data(), sizeof(uint64_t), 8192, file);
-  //   fflush(file);
-    
-  //   pros::delay(100);
-  // }
+    pros::delay(100);
+  }
 
-  Data testData1(0, 1, 2, 3, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8);
-  addToBuffer(testData1);
-  fwrite(B1.arr.data(), sizeof(Data), B1.index, file);
-  B1.clearBuffer();
+  // Data testData1(0, 1, 2, 3, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8);
+  // addToBuffer(testData1);
+  // fwrite(B1.arr.data(), sizeof(Data), B1.index, file);
+  // B1.clearBuffer();
 
-  AutonData testData2(0, 2, 1);
-  addToBuffer(testData2);
-  fwrite(AB1.arr.data(), sizeof(AutonData), AB1.index, file);
-  AB1.clearBuffer();
+  // AutonData testData2(0, 2, 1);
+  // addToBuffer(testData2);
+  // fwrite(AB1.arr.data(), sizeof(AutonData), AB1.index, file);
+  // AB1.clearBuffer();
 
-  PidData testData3(0, 0.0, 0.0, 0.0, 0.0, 1);
-  PidData testData4(10, 0.1, 0.0, 0.01, 0.0, 1);
-  PidData testData5(20, 0.2, 0.0, 0.08, 0.0, 1);
-  PidData testData6(30, 0.1, 0.0, 0.03, 0.0, 1);
-  PidData testData7(40, 0.0, 0.0, 0.0, 0.0, 1);
-  addToBuffer(testData3);
-  addToBuffer(testData4);
-  addToBuffer(testData5);
-  addToBuffer(testData6);
-  addToBuffer(testData7);
-  fwrite(PB1.arr.data(), sizeof(PidData), PB1.index, file);
-  PB1.clearBuffer();
+  // PidData testData3(0, 0.0, 0.0, 0.0, 0.0, 1);
+  // PidData testData4(10, 0.1, 0.0, 0.01, 0.0, 1);
+  // PidData testData5(20, 0.2, 0.0, 0.08, 0.0, 1);
+  // PidData testData6(30, 0.1, 0.0, 0.03, 0.0, 1);
+  // PidData testData7(40, 0.0, 0.0, 0.0, 0.0, 1);
+  // addToBuffer(testData3);
+  // addToBuffer(testData4);
+  // addToBuffer(testData5);
+  // addToBuffer(testData6);
+  // addToBuffer(testData7);
+  // fwrite(PB1.arr.data(), sizeof(PidData), PB1.index, file);
+  // PB1.clearBuffer();
 
-  fflush(file);
-  fclose(file);
-  eMsg.addText("Test Logging complete. ");
+  // fflush(file);
+  // fclose(file);
+  // eMsg.addText("Test Logging complete. ");
 }

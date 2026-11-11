@@ -10,6 +10,19 @@ Tracker::Tracker(Drive& chassis, Odom& odom, Imu& imu, Rotation& rotVert, Rotati
   x(0), y(0)
 {}
 
+void Tracker::updateInit() {
+  pros::Task tracking([this]() {
+    this->updateLoop();
+  });
+}
+
+void Tracker::updateLoop() {
+  while (true) {
+    update();
+    pros::delay(10);
+  }
+}
+
 void Tracker::update() {
   uint32_t millis = pros::millis();
   double rads = utils::degToRad(imu.get_rotation());
@@ -27,3 +40,12 @@ void Tracker::reset() {
   rotVert.set_position(0);
   rotHori.set_position(0);
 }
+
+void Tracker::setPos(double x, double y) {
+  this->x = x;
+  this->y = y;
+}
+
+double Tracker::getX() {return x;}
+double Tracker::getY() {return y;}
+double Tracker::getH() {return imu.get_heading();}

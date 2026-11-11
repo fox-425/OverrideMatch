@@ -1,12 +1,15 @@
 #include "autons/move.h"
 
 extern Drive chassis;
-extern pros::Imu inert;
 extern Tracker tracker;
 
 namespace Move {
   namespace MU {
-    void driveChassis(float fwrd, float side, float turn) {
+    void driveChassis(float fwrd, float side, float turn, float accel, float decel, MVs* pMVs) {
+      constexpr double mult = 1000.0;
+      fwrd *= mult;
+      side *= mult;
+      turn *= mult;
       double mv1 = fwrd + side + turn;
       double mv2 = fwrd - side - turn;
       double mv3 = fwrd + side - turn;
@@ -18,6 +21,16 @@ namespace Move {
         mv2 *= mult;
         mv3 *= mult;
         mv4 *= mult;
+      }
+      if ((accel > 0 || decel > 0) && pMVs != nullptr) {
+        if(pMVs->MV1 - mv1 > decel) {mv1 = pMVs->MV1 - decel;}
+        if(pMVs->MV2 - mv2 > decel) {mv2 = pMVs->MV2 - decel;}
+        if(pMVs->MV3 - mv3 > decel) {mv3 = pMVs->MV3 - decel;}
+        if(pMVs->MV4 - mv4 > decel) {mv4 = pMVs->MV4 - decel;}
+        if(mv1 - pMVs->MV1 > accel) {mv1 = pMVs->MV1 + accel;}
+        if(mv2 - pMVs->MV2 > accel) {mv2 = pMVs->MV2 + accel;}
+        if(mv3 - pMVs->MV3 > accel) {mv3 = pMVs->MV3 + accel;}
+        if(mv4 - pMVs->MV4 > accel) {mv4 = pMVs->MV4 + accel;}
       }
       chassis.millivolts(mv1, mv2, mv3, mv4);
     }
@@ -33,16 +46,10 @@ namespace Move {
     }
 
     float getInertialHeading() {
-      return static_cast<float>(inert.get_rotation());
+      return static_cast<float>(tracker.imu.get_rotation());
     }
-
-    double getX() {
-      return tracker.getX();
-    }
-
-    double getY() {
-      return tracker.getY();
-    }
+    double getX() {return tracker.getX();}
+    double getY() {return tracker.getY();}
 
     void scaleToMin(float& left_output, float& right_output, float min_output) {
       if (fabs(left_output) <= fabs(right_output) && left_output < min_output && left_output > 0) {
@@ -118,7 +125,7 @@ namespace Move {
     float turn_angle, uint32_t time_limit_msec, bool overshoot,
     float kp, float ki, float kd,
     float dRange, float errorRange1, float errorRange2, uint32_t errorTime1, uint32_t errorTime2,
-    float min_output, float max_output
+    bool stop, float min_output, float max_output
   ) {
     is_turning = true;
     PID pid = PID(turn_angle, kp, ki, kd);
@@ -126,6 +133,7 @@ namespace Move {
     // Normalize and set PID target
     turn_angle = MU::normalizeTarget(turn_angle);
     pid.setTarget(turn_angle);
+    pid.setExit(dRange, errorRange1, errorRange2, errorTime1, errorTime2);
     pid.setIntegral(0.0f, 3.0f);
 
     // PID loop for turning
@@ -147,7 +155,7 @@ namespace Move {
       pros::delay(10);
     }
 
-    if(!overshoot) {
+    if(stop) {
       MU::stopChassis(E_MOTOR_BRAKE_HOLD);
     }
     correct_angle = turn_angle;
@@ -302,7 +310,7 @@ namespace Move {
       }
       prev_left_output = left_output;
       prev_right_output = right_output;
-      // MU::driveChassis(left_output, right_output); // Apply output to chassis
+      // MU::driveChassis(left_output, right_output, kidasnas); // Apply output to chassis
       pros::delay(10);
     }
     correct_angle = MU::getInertialHeading(); // Update global heading

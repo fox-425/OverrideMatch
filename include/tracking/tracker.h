@@ -4,7 +4,7 @@
 #include "pros/rotation.hpp"
 #include "pros/imu.hpp"
 
-class Tracker {
+struct Tracker {
   struct TimeStamp {
     uint32_t millis;
     double rot;
@@ -26,13 +26,16 @@ class Tracker {
   double x;
   double y;
   
-public:
   Tracker(Drive& chassis, Odom& odom, Imu& imu, Rotation& rotVert, Rotation& rotHori);
 
+  void updateInit();
+  void updateLoop();
   void update();
 
   void reset();
+  void setPos(double x, double y);
 
   double getX();
   double getY();
+  double getH();
 };

@@ -3,12 +3,17 @@
 #include "pros/rtos.hpp"
 
 namespace Printing {
+  inline double x = 0;
+  inline double y = 0;
+  inline double h = 0;
   inline uint8_t celM1 = 0;
   inline uint8_t celM2 = 0;
   inline uint8_t celM3 = 0;
   inline uint8_t celM4 = 0;
-  inline uint8_t celM5 = 0;
-  inline uint8_t celM6 = 0;
+  inline int32_t mvM1 = 0;
+  inline int32_t mvM2 = 0;
+  inline int32_t mvM3 = 0;
+  inline int32_t mvM4 = 0;
   inline uint8_t celMC1 = 0;
   inline uint8_t celMC2 = 0;
   inline uint8_t celMC3 = 0;

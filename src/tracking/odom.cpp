@@ -1,19 +1,19 @@
 #include "tracking/odom.h"
 #include <cmath>
 
-Odom::Odom(double diaVert, double diaHori) {
-  lastMillis = 0;
-  lastCentiVert = 0;
-  lastCentiHori = 0;
-  multVert = diaVert*M_PI/36000;
-  multHori = diaHori*M_PI/36000;
-};
+Odom::Odom(double diaVert, double diaHori, double offV, double offH):
+  lastMillis(0), lastRads(0),
+  lastCentiVert(0), lastCentiHori(0),
+  multVert(diaVert*M_PI/36000),
+  multHori(diaHori*M_PI/36000),
+  offV(offV), offH(offH)
+{};
 
 void Odom::update(uint32_t millis, double rads, int32_t centiVert, int32_t centiHori) {
   uint32_t dt = millis-lastMillis;
   double dRads = rads-lastRads;
-  double dVert = (double)(centiVert-lastCentiVert) * multVert;
-  double dHori = (double)(centiHori-lastCentiHori) * multHori;
+  double dVert = (double)(centiVert-lastCentiVert) * multVert; // change in vertical read by odom in inches
+  double dHori = (double)(centiHori-lastCentiHori) * multHori; // change in horizontal read by odom in inches
 
   double dLocalX;
   double dLocalY;
@@ -21,9 +21,9 @@ void Odom::update(uint32_t millis, double rads, int32_t centiVert, int32_t centi
     dLocalX = dHori;
     dLocalY = dVert;
   } else {
-    double mult = 2.0 * sin(dRads * 0.5) / dRads;
-    dLocalX = dHori * mult;
-    dLocalY = dVert * mult;
+    double mult = 2.0 * sin(dRads * 0.5);
+    dLocalX = mult * (dHori/dRads + offH);
+    dLocalY = mult * (dVert/dRads + offV);
   }
 
   double mag = sqrt(dLocalX*dLocalX + dLocalY*dLocalY);

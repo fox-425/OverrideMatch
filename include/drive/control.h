@@ -5,13 +5,12 @@
 #include "pros/misc.hpp"
 #include "pid.h"
 
-class Control {
-public:
+struct Control {
   Drive& chassis;
   Controller& primary;
 
   Control(Drive& chassis, Controller& primary);
 
   uint8_t Buttons(uint8_t next);
-  void Analog();
+  void Analog(MVs& pMVs, PID& pidH);
 };

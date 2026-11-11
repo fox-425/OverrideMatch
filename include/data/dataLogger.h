@@ -3,12 +3,11 @@
 #include <cstdint>
 #include <array>
 
-struct Data {
+struct __attribute__((packed)) Data {
   uint8_t dataTag = 0x01;
   uint32_t time;
   uint32_t RotY;
   uint32_t RotX;
-  uint32_t RotC;
   double DI;
   double D1;
   double D2;
@@ -17,11 +16,11 @@ struct Data {
   double head;
   double x;
   double y;
-  Data(uint32_t time, uint32_t RotY, uint32_t RotX, uint32_t RotC, double DI, double D1, double D2, double D3, double D4, double head, double x, double y);
+  Data(uint32_t time, uint32_t RotY, uint32_t RotX, double DI, double D1, double D2, double D3, double D4, double head, double x, double y);
   Data();
 };
 
-struct PidData {
+struct __attribute__((packed)) PidData {
   uint8_t dataTag = 0x02;
   uint16_t id;
   uint32_t time;
@@ -33,7 +32,7 @@ struct PidData {
   PidData();
 };
 
-struct AutonData {
+struct __attribute__((packed)) AutonData {
   uint8_t dataTag = 0x03;
   uint8_t type;
   uint16_t id;
@@ -73,6 +72,7 @@ struct AutonBuffer {
 };
 
 struct Logger {
+  bool sdActive;
   bool bufferActive;
   Buffer B1;
   Buffer B2;

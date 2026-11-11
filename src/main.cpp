@@ -4,9 +4,10 @@
 #include "tracking/tracker.h"
 #include "tracking/odom.h"
 #include "autons/move.h"
+#include "autons/auton.h"
 #include "data/EMSG.h"
-#include "data/screenWriting.h"
 #include "data/dataLogger.h"
+#include "data/screenWriting.h"
 #include "utils.h"
 #include "pid.h"
 
@@ -21,12 +22,16 @@ int8_t M4Port = -20;
 int8_t MC1Port = 2;
 int8_t MC2Port = -3;
 int8_t MC3Port = 4;
+int8_t MTPort = -19;
+char Cw_3Wire = 'G';
 int8_t D1Port = 21;
 int8_t D2Port = 21;
 int8_t D3Port = 21;
 int8_t D4Port = 21;
-char In1_3Wire = 'G';
-char In2_3Wire = 'H';
+int8_t RYPort = 12;
+int8_t RXPort = -5;
+int8_t Iport = 7;
+int8_t CrPort = 21;
 
 EMSG eMsg;
 Motor M1(M1Port, MotorGearset::blue);
@@ -36,24 +41,23 @@ Motor M4(M4Port, MotorGearset::blue);
 Motor MC1(MC1Port, MotorGearset::blue);
 Motor MC2(MC2Port, MotorGearset::blue);
 Motor MC3(MC3Port, MotorGearset::blue);
-pros::adi::DigitalOut In1(In1_3Wire);
-pros::adi::DigitalOut In2(In2_3Wire);
+Motor MT(MTPort, MotorGearset::blue);
+pros::adi::DigitalOut claw(Cw_3Wire);
 pros::Distance D1(D1Port);
 pros::Distance D2(D2Port);
 pros::Distance D3(D3Port);
 pros::Distance D4(D4Port);
-pros::Rotation RY(21);
-pros::Rotation RX(21);
-pros::Rotation RC(16);
-
-// Motor MT(20, MotorGearset::blue);
-
-Drive chassis(M1, M2, M3, M4, MC1, MC2, MC3, RC, In1, In2);
+pros::Rotation RY(RYPort);
+pros::Rotation RX(RXPort);
+pros::Imu imu(Iport);
+pros::Optical opt(CrPort);
 pros::Controller primary(pros::E_CONTROLLER_MASTER);
+
+Drive chassis(M1, M2, M3, M4, MC1, MC2, MC3, MT, claw, opt);
+Odom odom(2, 2, 0.723852815581, 1.24661715039);
+Tracker tracker(chassis, odom, imu, RY, RX);
 Control control(chassis, primary);
 Logger logger;
-
-
 
 /**
  * Runs initialization code. This occurs as soon as the program is started.
@@ -66,10 +70,23 @@ void initialize() {
   M2.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
   M3.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
   M4.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+  MC1.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+  MC2.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+  MC3.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+  MT.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+  RY.reset_position();
+  RX.reset_position();
+  imu.reset(false);
   Printing::init();
-  // logger.startLogging();
-  chassis.initDiff();
-	pros::delay(2000);
+  logger.startLogging();
+  uint32_t time = pros::millis() + 2000;
+  while(pros::millis() < time && imu.is_calibrating()) {
+    pros::delay(10);
+  }
+  pros::delay(2000);
+  tracker.setPos(0, 0);
+  tracker.updateInit();
+  pros::delay(50);
 }
 
 /**
@@ -101,7 +118,9 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous() {}
+void autonomous() {
+  auton::test();
+}
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -117,6 +136,28 @@ void autonomous() {}
  * task, not resume it from where it left off.
  */
 void opcontrol() {
+  // while (!primary.get_digital(E_CONTROLLER_DIGITAL_A)) {
+  //   pros::delay(10);
+  // }
+  // uint32_t start = pros::millis();
+  // int32_t PY1 = RY.get_position();
+  // int32_t PX1 = RX.get_position();
+  // double rot1 = imu.get_rotation();
+  // chassis.millivolts(6000, -6000, -6000, 6000);
+  // while (imu.get_rotation()-rot1 < 90) {
+  //   pros::delay(10);
+  // }
+  // int32_t PY2 = RY.get_position();
+  // int32_t PX2 = RX.get_position();
+  // double rot2 = imu.get_rotation();
+  // uint32_t end = pros::millis();
+  // chassis.millivolts(0, 0, 0, 0);
+  // eMsg.clearText();
+  // eMsg.addText("PY: " + std::to_string(PY2 - PY1) + ", PX: " + std::to_string(PX2 - PX1) + ", Rot: " + std::to_string(rot2 - rot1) + ", Time: " + std::to_string(end - start));
+  // while (true) {
+  //   pros::delay(10);
+  // }
+
   /*
 	PID testPID(100, 0.5, 0, 12);
   testPID.setExit(10, 2, 1, 500, 150);
@@ -179,13 +220,18 @@ void opcontrol() {
 
   pros::screen::print(E_TEXT_MEDIUM, 1, "%d", pros::millis());
   pros::screen::print(E_TEXT_MEDIUM, 2, "%d", testPID.exitType());
-  // */
+  */
 
   uint8_t prev = 0;
+  MVs pMVs;
+  PID pidH(0.0, 1.0, 0.0, 3.0, false);
+  pidH.setExit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+  pidH.setIntegral(0.0f, 0.0f);
   while (true) {
-    control.Analog();
+    control.Analog(pMVs, pidH);
     prev = control.Buttons(prev);
 
     pros::delay(10);
   }
+  //*/
 }
