@@ -33,6 +33,12 @@ namespace Move {
         if(mv4 - pMVs->MV4 > accel) {mv4 = pMVs->MV4 + accel;}
       }
       chassis.millivolts(mv1, mv2, mv3, mv4);
+      if (pMVs != nullptr) {
+        pMVs->MV1 = mv1;
+        pMVs->MV2 = mv2;
+        pMVs->MV3 = mv3;
+        pMVs->MV4 = mv4;
+      }
     }
 
     float normalizeTarget(float angle) {
@@ -317,4 +323,81 @@ namespace Move {
     is_turning = false;                   // Reset turning state
   }
 
+  void moveToPose(
+    double x, double y, double angle, uint32_t time_limit_msec, bool chain, bool stop,
+    float d_kp, float d_ki, float d_kd, float h_kp, float h_ki, float h_kd,
+    float d_DR, float d_ER1, float d_ER2, uint32_t d_ET1, uint32_t d_ET2,
+    float h_DR, float h_ER1, float h_ER2, uint32_t h_ET1, uint32_t h_ET2,
+    float overtol,
+    float min_output, float max_output,
+    float max_accel, float max_decel
+  ) {
+    is_turning = true;
+
+    PID pid_x(x - MU::getX(), d_kp, d_ki, d_kd);
+    PID pid_y(y - MU::getY(), d_kp, d_ki, d_kd);
+    PID pid_h(MU::normalizeTarget(angle), h_kp, h_ki, h_kd);
+
+    pid_x.setIntegral(0.0, 3.3);
+    pid_y.setIntegral(0.0, 3.3);
+    pid_h.setIntegral(0.0, 1.0);
+    pid_x.setExit(d_DR, d_ER1, d_ER2, d_ET1, d_ET2);
+    pid_y.setExit(d_DR, d_ER1, d_ER2, d_ET1, d_ET2);
+    pid_h.setExit(h_DR, h_ER1, h_ER2, h_ET1, h_ET2);
+    pid_x.setArrive(false);
+    pid_y.setArrive(false);
+    pid_h.setArrive(false);
+
+    uint32_t start = pros::millis();
+    MVs pMVs{};
+    while (pros::millis() - start < time_limit_msec) {
+      double ex = x - MU::getX();
+      double ey = y - MU::getY();
+      double dist = hypot(ex, ey);
+
+      pid_x.setTarget(x);
+      pid_y.setTarget(y);
+
+      float x_out = pid_x.update(pros::millis(), MU::getX()).out;
+      float y_out = pid_y.update(pros::millis(), MU::getY()).out;
+
+      double head = MU::getInertialHeading();
+      double theta = utils::degToRad(head);
+      
+      float fwrd = x_out * sin(theta) + y_out * cos(theta);
+      float side = x_out * cos(theta) - y_out * sin(theta);
+      
+      pid_h.setTarget(MU::normalizeTarget(angle));
+
+      float turn = pid_h.update(pros::millis(), head).out;
+
+      float mag = hypot(fwrd, side);
+      if (dist > overtol && mag > 0 && mag < min_output) {
+        float scale = min_output / mag;
+        fwrd *= scale;
+        side *= scale;
+      }
+      float mv1 = fwrd + side + turn;
+      float mv2 = fwrd - side - turn;
+      float mv3 = fwrd + side - turn;
+      float mv4 = fwrd - side + turn;
+
+      float max_mv = std::max({std::fabs(mv1), std::fabs(mv2), std::fabs(mv3), std::fabs(mv4)});
+      if (max_mv > max_output) {
+        float scale = max_output / max_mv;
+        fwrd *= scale;
+        side *= scale;
+        turn *= scale;
+      }
+      MU::driveChassis(fwrd, side, turn, max_accel, max_decel, &pMVs);
+
+      if (pid_x.exit() && pid_y.exit() && pid_h.exit()) {
+        break;
+      }
+
+      pros::delay(10);
+    }
+    correct_angle = angle;
+    is_turning = false;
+  }
 }

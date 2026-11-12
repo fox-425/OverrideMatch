@@ -27,6 +27,27 @@ void Drive::toggle(int32_t mv) {
   MT.move_voltage(mv);
 }
 
+void Drive::toggleToColor() {
+  pros::c::optical_rgb_s_t rgb = opt.get_rgb();
+  double sum = rgb.red + rgb.green + rgb.blue;
+  double r = rgb.red / sum;
+  double g = rgb.green / sum;
+  double b = rgb.blue / sum;
+  eMsg.clearText();
+  eMsg.addText(std::format("RGB: {:06.2f}, {:06.2f}, {:06.2f} -> ", r, g, b));
+  if (b > 0.4) {
+    eMsg.addText("blue");
+  } else if (r > 0.4) {
+    if (g > 0.3) {
+      eMsg.addText("yellow");
+    } else {
+      eMsg.addText("red");
+    }
+  } else {
+    eMsg.addText("no color");
+  }
+}
+
 void Drive::cascade(int32_t mv) {
   double vel = std::min({std::fabs(MC1.get_actual_velocity()), std::fabs(MC2.get_actual_velocity()), std::fabs(MC3.get_actual_velocity())});
   double cur = std::min({std::fabs(MC1.get_current_draw()), std::fabs(MC2.get_current_draw()), std::fabs(MC3.get_current_draw())});

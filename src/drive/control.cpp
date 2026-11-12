@@ -34,8 +34,9 @@ uint8_t Control::Buttons(uint8_t prev) {
   } else if (!R1 && !R2 && (R1_prev || R2_prev)) {
     chassis.cascade(0);
   }
-
   chassis.toggle(Y ? 12000 : 0);
+
+  chassis.toggleToColor();
 
   uint8_t next = (R1 ? 0b00000001 : 0) | (R2 ? 0b00000010 : 0);
   return next;

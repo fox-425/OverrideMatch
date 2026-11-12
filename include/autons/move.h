@@ -78,6 +78,14 @@ namespace Move {
     float min_output = 0.0f, float max_output = 12.0f,
     float max_accel = 12.0f, float max_decel = 12.0f
   );
+
+  void moveToPose(
+    double x, double y, double angle, uint32_t time_limit_msec, bool chain, bool stop,
+    float d_kp, float d_ki, float d_kd, float h_kp, float h_ki, float h_kd,
+    float overtol,
+    float min_output = 0.0f, float max_output = 12.0f,
+    float max_accel = 12.0f, float max_decel = 12.0f
+  );
 /*
   void swing(
     double turn_kp, double turn_ki, double turn_kd,

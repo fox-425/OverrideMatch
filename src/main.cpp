@@ -31,7 +31,7 @@ int8_t D4Port = 21;
 int8_t RYPort = 12;
 int8_t RXPort = -5;
 int8_t Iport = 7;
-int8_t CrPort = 21;
+int8_t CrPort = 9;
 
 EMSG eMsg;
 Motor M1(M1Port, MotorGearset::blue);
@@ -76,6 +76,8 @@ void initialize() {
   MT.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
   RY.reset_position();
   RX.reset_position();
+  opt.disable_gesture();
+  opt.set_led_pwm(100);
   imu.reset(false);
   Printing::init();
   logger.startLogging();

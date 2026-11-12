@@ -36,6 +36,7 @@ struct Drive {
 
   void millivolts(int32_t mv1, int32_t mv2, int32_t mv3, int32_t mv4);
   void toggle(int32_t mv);
+  void toggleToColor();
   void cascade(int32_t mv);
 
   void brake(motor_brake_mode_e_t type);
