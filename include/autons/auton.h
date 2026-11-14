@@ -7,4 +7,5 @@ namespace auton {
   void sec15L_BLUE();
   void sec15R_RED();
   void sec15R_BLUE();
+  void tempSkills();
 }

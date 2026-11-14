@@ -156,7 +156,7 @@ void autonomous() {
     Move::MU::cascadeControl();
   });
   // eMsg.clearText();
-  set = 4;
+  set = 3;
   if (set == 0) {
     // eMsg.addText("TEST");
     auton::test();
@@ -172,6 +172,8 @@ void autonomous() {
   } else if (set == 4) {
     // eMsg.addText("R BLUE");
     auton::sec15R_BLUE();
+  } else if (set == 5) {
+    auton::tempSkills();
   } else {
     auton::test();
     eMsg.addText("SELECTOR OUT OF BOUNDS");
@@ -284,6 +286,9 @@ void opcontrol() {
   pros::screen::print(E_TEXT_MEDIUM, 1, "%d", pros::millis());
   pros::screen::print(E_TEXT_MEDIUM, 2, "%d", testPID.exitType());
   */
+  chassis.clawT();
+  pros::delay(75);
+  chassis.clawT();
 
   uint8_t prev = 0;
   MVs pMVs;

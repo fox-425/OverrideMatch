@@ -128,7 +128,7 @@ namespace Move {
       if (tar == 0) {
         level = 130;
       } else if (tar == 1) {
-        level = 200;
+        level = 250;
       } else if (tar == 2) {
         level = 80;
       } else if (tar == 3) {
