@@ -16,7 +16,7 @@
 #include <arm_neon.h>
 
 #define LOG_FILE_PATH "/usd/auton.csv"
-uint8_t set = 0;
+int set = 0;
 
 int8_t M1Port = -1;
 int8_t M2Port = 10;
@@ -91,14 +91,13 @@ void initialize() {
   //   auton_file = fopen(LOG_FILE_PATH, "w");
   //   fprintf(auton_file, "%d", 0);
   //   fclose(auton_file);
-  //   delay(100);
-  //   auton_file = fopen(LOG_FILE_PATH, "r");
-  // }
-  // fscanf(auton_file, "%hhu", &set);
-  // fclose(auton_file);
-  // if (set < 0 || set > 2) {
-  //   set = 0;
-  //   eMsg.addText("SELECTOR FAILED");
+  // } else {
+  //   fscanf(auton_file, "%d", &set);
+  //   fclose(auton_file);
+  //   if (set < 0 || set > 4) {
+  //     set = 0;
+  //     eMsg.addText("SELECTOR FAILED");
+  //   }
   // }
 
   while(imu.is_calibrating()) {
@@ -112,6 +111,8 @@ void initialize() {
   Printing::init();
   logger.startLogging();
   pros::delay(50);
+  eMsg.clearText();
+  eMsg.addText(std::to_string(set));
 }
 
 /**
@@ -144,16 +145,6 @@ void competition_initialize() {}
  * from where it left off.
  */
 void autonomous() {
-  // if (set == 0) {
-  //   auton::test();
-  // } else if (set == 1) {
-  //   auton::sec15L();
-  // } else if (set == 2) {
-  //   auton::sec15R();
-  // } else {
-  //   auton::test();
-  //   eMsg.addText("SELECTOR OUT OF BOUNDS");
-  // }
   MC1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
   MC2.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
   MC3.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
@@ -164,7 +155,27 @@ void autonomous() {
   pros::Task cascadeTask([] {
     Move::MU::cascadeControl();
   });
-  auton::sec15R();
+  // eMsg.clearText();
+  set = 4;
+  if (set == 0) {
+    // eMsg.addText("TEST");
+    auton::test();
+  } else if (set == 1) {
+    // eMsg.addText("L RED");
+    auton::sec15L_RED();
+  } else if (set == 2) {
+    // eMsg.addText("L BLUE");
+    auton::sec15L_BLUE();
+  } else if (set == 3) {
+    // eMsg.addText("R RED");
+    auton::sec15R_RED();
+  } else if (set == 4) {
+    // eMsg.addText("R BLUE");
+    auton::sec15R_BLUE();
+  } else {
+    auton::test();
+    eMsg.addText("SELECTOR OUT OF BOUNDS");
+  }
 
   // double startX = RX.get_position()/100.0;
   // double startY = RY.get_position()/100.0;

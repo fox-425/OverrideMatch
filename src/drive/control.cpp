@@ -20,7 +20,7 @@ uint8_t Control::Buttons(uint8_t prev, PID& pidC) {
   bool S = primary.get_digital(E_CONTROLLER_DIGITAL_DOWN);
   bool W = primary.get_digital(E_CONTROLLER_DIGITAL_LEFT);
   */
-  constexpr uint8_t tarC = 1;
+  constexpr uint8_t tarC = 3;
   bool R1 = primary.get_digital(E_CONTROLLER_DIGITAL_R1);
   bool R2 = primary.get_digital(E_CONTROLLER_DIGITAL_R2);
   bool L1 = primary.get_digital(E_CONTROLLER_DIGITAL_L1);
@@ -35,7 +35,7 @@ uint8_t Control::Buttons(uint8_t prev, PID& pidC) {
     pidC.setTarget(chassis.distC.get_distance());
     pidC.firstTime = true;
   } else if (R2 && !R2_prev) {
-    chassis.cascade(-9000);
+    chassis.cascade(-7200);
     pidC.setTarget(chassis.distC.get_distance());
     pidC.firstTime = true;
   } else if (!R1 && !R2 && (R1_prev || R2_prev)) {
@@ -60,7 +60,7 @@ uint8_t Control::Buttons(uint8_t prev, PID& pidC) {
 
 void Control::Analog(MVs& pMVs, PID& pidH) {
   constexpr bool disableDrive = false;
-  constexpr double slew = 2000.0;
+  constexpr double slew = 6000.0;
   constexpr double AtoMV = 12000.0/127.0;
   double LY = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_LEFT_Y));
   double RX = AtoMV * (double)(primary.get_analog(E_CONTROLLER_ANALOG_RIGHT_X));

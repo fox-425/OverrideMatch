@@ -39,6 +39,10 @@ struct Drive {
 
   void millivolts(int32_t mv1, int32_t mv2, int32_t mv3, int32_t mv4);
   void toggle(int32_t mv);
+  
+  /**
+   * @param tar 1-> Blue | 3-> Red
+  */
   uint8_t getColor();
 
   void cascade(int32_t mv);
