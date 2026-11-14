@@ -16,6 +16,16 @@ namespace Move {
     float absClamp(float value, float min, float max);
     void stopChassis(motor_brake_mode_e_t type);
     void resetChassis();
+
+    /**
+     * @param tar 1-> Blue | 3-> Red
+    */
+    void toColor(uint8_t tar, uint32_t timeout);
+
+    inline double level;
+    inline bool levelOn;
+    void setLevel(uint8_t tar);
+    void cascadeControl();
   }
 
   /** @brief When true, the robot will attempt to turn to correct_angle */
@@ -82,7 +92,8 @@ namespace Move {
   void moveToPose(
     double x, double y, double angle, uint32_t time_limit_msec, bool chain, bool stop,
     float d_kp, float d_ki, float d_kd, float h_kp, float h_ki, float h_kd,
-    float overtol,
+    float d_DR, float d_ER1, float d_ER2, uint32_t d_ET1, uint32_t d_ET2,
+    float h_DR, float h_ER1, float h_ER2, uint32_t h_ET1, uint32_t h_ET2,
     float min_output = 0.0f, float max_output = 12.0f,
     float max_accel = 12.0f, float max_decel = 12.0f
   );

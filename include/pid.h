@@ -2,7 +2,7 @@
 #include "utils.h"
 #include <cstdint>
 
-class PID {
+struct PID {
   static uint16_t nextID;
   uint16_t ID;
   float target;
@@ -28,7 +28,6 @@ class PID {
   bool firstTime;
   bool atTarget;
 
-public:
   struct PIDoutput {
     float p;
     float i;

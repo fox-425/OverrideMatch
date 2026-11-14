@@ -17,6 +17,12 @@ namespace Printing {
   inline uint8_t celMC1 = 0;
   inline uint8_t celMC2 = 0;
   inline uint8_t celMC3 = 0;
+  inline int32_t mvMC1 = 0;
+  inline int32_t mvMC2 = 0;
+  inline int32_t mvMC3 = 0;
+  inline int32_t amMC1 = 0;
+  inline int32_t amMC2 = 0;
+  inline int32_t amMC3 = 0;
 
   void init();
 

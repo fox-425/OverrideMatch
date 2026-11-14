@@ -11,6 +11,6 @@ struct Control {
 
   Control(Drive& chassis, Controller& primary);
 
-  uint8_t Buttons(uint8_t next);
+  uint8_t Buttons(uint8_t next, PID& pidC);
   void Analog(MVs& pMVs, PID& pidH);
 };

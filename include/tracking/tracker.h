@@ -33,7 +33,7 @@ struct Tracker {
   void update();
 
   void reset();
-  void setPos(double x, double y);
+  void setPos(double x, double y, double h);
 
   double getX();
   double getY();

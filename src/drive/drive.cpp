@@ -8,11 +8,11 @@ MVs::MVs(int32_t MV1, int32_t MV2, int32_t MV3, int32_t MV4): MV1(MV1), MV2(MV2)
 Drive::Drive(
   Motor& M1, Motor& M2, Motor& M3, Motor& M4,
   Motor& MC1, Motor& MC2, Motor& MC3, Motor& MT,
-  adi::DigitalOut& claw, Optical& opt
+  adi::DigitalOut& claw, Optical& opt, pros::Distance& distC
 ):
   M1(M1), M2(M2), M3(M3), M4(M4),
   MC1(MC1), MC2(MC2), MC3(MC3), MT(MT),
-  claw(claw), opt(opt),
+  claw(claw), clawV(false), opt(opt), distC(distC),
   mvC1(0), mvC2(0), mvC3(0)
 {}
 
@@ -27,7 +27,7 @@ void Drive::toggle(int32_t mv) {
   MT.move_voltage(mv);
 }
 
-void Drive::toggleToColor() {
+uint8_t Drive::getColor() {
   pros::c::optical_rgb_s_t rgb = opt.get_rgb();
   double sum = rgb.red + rgb.green + rgb.blue;
   double r = rgb.red / sum;
@@ -37,26 +37,33 @@ void Drive::toggleToColor() {
   eMsg.addText(std::format("RGB: {:06.2f}, {:06.2f}, {:06.2f} -> ", r, g, b));
   if (b > 0.4) {
     eMsg.addText("blue");
+    return 1;
   } else if (r > 0.4) {
     if (g > 0.3) {
       eMsg.addText("yellow");
+      return 2;
     } else {
       eMsg.addText("red");
+      return 3;
     }
   } else {
     eMsg.addText("no color");
+    return 0;
   }
 }
 
+void Drive::clawT(bool val) {clawV = val; claw.set_value(val);}
+void Drive::clawT() {clawT(!clawV);}
+
 void Drive::cascade(int32_t mv) {
-  double vel = std::min({std::fabs(MC1.get_actual_velocity()), std::fabs(MC2.get_actual_velocity()), std::fabs(MC3.get_actual_velocity())});
-  double cur = std::min({std::fabs(MC1.get_current_draw()), std::fabs(MC2.get_current_draw()), std::fabs(MC3.get_current_draw())});
-  if (vel < 180 && cur > 1500) {
-    MC1.brake();
-    MC2.brake();
-    MC3.brake();
-    return;
-  }
+  // double vel = std::min({std::fabs(MC1.get_actual_velocity()), std::fabs(MC2.get_actual_velocity()), std::fabs(MC3.get_actual_velocity())});
+  // double cur = std::min({std::fabs(MC1.get_current_draw()), std::fabs(MC2.get_current_draw()), std::fabs(MC3.get_current_draw())});
+  // if (vel < 60 && cur > 2000) {
+  //   MC1.brake();
+  //   MC2.brake();
+  //   MC3.brake();
+  //   return;
+  // }
   MC1.move_voltage(mv);
   MC2.move_voltage(mv);
   MC3.move_voltage(mv);

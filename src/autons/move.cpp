@@ -10,6 +10,8 @@ namespace Move {
       fwrd *= mult;
       side *= mult;
       turn *= mult;
+      accel *= mult;
+      decel *= mult;
       double mv1 = fwrd + side + turn;
       double mv2 = fwrd - side - turn;
       double mv3 = fwrd + side - turn;
@@ -102,6 +104,55 @@ namespace Move {
 
     void resetChassis() {
       chassis.tare_position_all();
+    }
+
+    void toColor(uint8_t tar, uint32_t timeout) {
+      uint32_t start = pros::millis();
+      while (true) {
+        if (pros::millis() - start >= timeout) {
+          break;
+        }
+        uint8_t color = chassis.getColor();
+        if (color == 0 || color == tar) {
+          chassis.toggle(0);
+          break;
+        } else {
+          chassis.toggle(12000);
+        }
+      }
+      chassis.toggle(0);
+    }
+
+    void setLevel(uint8_t tar) {
+      levelOn = true;
+      if (tar == 0) {
+        level = 130;
+      } else if (tar == 1) {
+        level = 200;
+      } else if (tar == 2) {
+        level = 80;
+      } else if (tar == 3) {
+        level = 250;
+      }
+      // level = tar;
+    }
+
+    void cascadeControl() {
+      PID pidC(0.0, 0.05, 0.01, 0.25, false);
+      while (true) {
+        if (levelOn) {
+          pidC.setTarget(level);
+          if (std::fabs(level-chassis.distC.get_distance()) < 10) {
+            chassis.MC1.brake();
+            chassis.MC2.brake();
+            chassis.MC3.brake();
+            levelOn = false;
+            continue;
+          }
+          chassis.cascade(pidC.update(pros::millis(), chassis.distC.get_distance()).out * 100.0);
+        }
+        pros::delay(10);
+      }
     }
   }
 
@@ -328,7 +379,6 @@ namespace Move {
     float d_kp, float d_ki, float d_kd, float h_kp, float h_ki, float h_kd,
     float d_DR, float d_ER1, float d_ER2, uint32_t d_ET1, uint32_t d_ET2,
     float h_DR, float h_ER1, float h_ER2, uint32_t h_ET1, uint32_t h_ET2,
-    float overtol,
     float min_output, float max_output,
     float max_accel, float max_decel
   ) {
@@ -371,20 +421,20 @@ namespace Move {
 
       float turn = pid_h.update(pros::millis(), head).out;
 
-      float mag = hypot(fwrd, side);
-      if (dist > overtol && mag > 0 && mag < min_output) {
-        float scale = min_output / mag;
-        fwrd *= scale;
-        side *= scale;
-      }
+      // float mag = hypot(fwrd, side);
+      // if (mag > 0 && mag < min_output) {
+      //   float scale = min_output / mag;
+      //   fwrd *= scale;
+      //   side *= scale;
+      // }
       float mv1 = fwrd + side + turn;
       float mv2 = fwrd - side - turn;
       float mv3 = fwrd + side - turn;
       float mv4 = fwrd - side + turn;
 
       float max_mv = std::max({std::fabs(mv1), std::fabs(mv2), std::fabs(mv3), std::fabs(mv4)});
-      if (max_mv > max_output) {
-        float scale = max_output / max_mv;
+      if (max_mv > max_output*1000.0) {
+        float scale = max_output*1000.0 / max_mv;
         fwrd *= scale;
         side *= scale;
         turn *= scale;
@@ -396,6 +446,9 @@ namespace Move {
       }
 
       pros::delay(10);
+    }
+    if (stop) {
+      MU::stopChassis(E_MOTOR_BRAKE_HOLD);
     }
     correct_angle = angle;
     is_turning = false;

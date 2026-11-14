@@ -41,7 +41,14 @@ void Tracker::reset() {
   rotHori.set_position(0);
 }
 
-void Tracker::setPos(double x, double y) {
+void Tracker::setPos(double x, double y, double h) {
+  rotVert.set_position(0);
+  rotHori.set_position(0);
+  odom.lastCentiHori = 0;
+  odom.lastCentiVert = 0;
+  odom.dx = 0;
+  odom.dy = 0;
+  imu.set_heading(h);
   this->x = x;
   this->y = y;
 }

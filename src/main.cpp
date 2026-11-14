@@ -15,6 +15,9 @@
 #include <cmath>
 #include <arm_neon.h>
 
+#define LOG_FILE_PATH "/usd/auton.csv"
+uint8_t set = 0;
+
 int8_t M1Port = -1;
 int8_t M2Port = 10;
 int8_t M3Port = 11;
@@ -23,11 +26,12 @@ int8_t MC1Port = 2;
 int8_t MC2Port = -3;
 int8_t MC3Port = 4;
 int8_t MTPort = -19;
-char Cw_3Wire = 'G';
+char Cw_3Wire = 'A';
 int8_t D1Port = 21;
 int8_t D2Port = 21;
 int8_t D3Port = 21;
 int8_t D4Port = 21;
+int8_t DCPort = 6;
 int8_t RYPort = 12;
 int8_t RXPort = -5;
 int8_t Iport = 7;
@@ -47,14 +51,15 @@ pros::Distance D1(D1Port);
 pros::Distance D2(D2Port);
 pros::Distance D3(D3Port);
 pros::Distance D4(D4Port);
+pros::Distance DC(DCPort);
 pros::Rotation RY(RYPort);
 pros::Rotation RX(RXPort);
 pros::Imu imu(Iport);
 pros::Optical opt(CrPort);
 pros::Controller primary(pros::E_CONTROLLER_MASTER);
 
-Drive chassis(M1, M2, M3, M4, MC1, MC2, MC3, MT, claw, opt);
-Odom odom(2, 2, 0.723852815581, 1.24661715039);
+Drive chassis(M1, M2, M3, M4, MC1, MC2, MC3, MT, claw, opt, DC);
+Odom odom(2, 2, 1.08006261881, -0.711506205971);
 Tracker tracker(chassis, odom, imu, RY, RX);
 Control control(chassis, primary);
 Logger logger;
@@ -78,16 +83,34 @@ void initialize() {
   RX.reset_position();
   opt.disable_gesture();
   opt.set_led_pwm(100);
+  opt.set_integration_time(20);
   imu.reset(false);
-  Printing::init();
-  logger.startLogging();
-  uint32_t time = pros::millis() + 2000;
-  while(pros::millis() < time && imu.is_calibrating()) {
+
+  // FILE* auton_file = fopen(LOG_FILE_PATH, "r");
+  // if (auton_file != NULL) {
+  //   auton_file = fopen(LOG_FILE_PATH, "w");
+  //   fprintf(auton_file, "%d", 0);
+  //   fclose(auton_file);
+  //   delay(100);
+  //   auton_file = fopen(LOG_FILE_PATH, "r");
+  // }
+  // fscanf(auton_file, "%hhu", &set);
+  // fclose(auton_file);
+  // if (set < 0 || set > 2) {
+  //   set = 0;
+  //   eMsg.addText("SELECTOR FAILED");
+  // }
+
+  while(imu.is_calibrating()) {
     pros::delay(10);
   }
-  pros::delay(2000);
-  tracker.setPos(0, 0);
+  while (std::isnan(RX.get_position()) || std::isnan(RY.get_position()) || std::isinf(imu.get_rotation())) {
+    pros::delay(10);
+  }
   tracker.updateInit();
+  tracker.setPos(0, 0, 0);
+  Printing::init();
+  logger.startLogging();
   pros::delay(50);
 }
 
@@ -121,7 +144,34 @@ void competition_initialize() {}
  * from where it left off.
  */
 void autonomous() {
-  auton::test();
+  // if (set == 0) {
+  //   auton::test();
+  // } else if (set == 1) {
+  //   auton::sec15L();
+  // } else if (set == 2) {
+  //   auton::sec15R();
+  // } else {
+  //   auton::test();
+  //   eMsg.addText("SELECTOR OUT OF BOUNDS");
+  // }
+  MC1.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+  MC2.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+  MC3.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+  chassis.clawT();
+  pros::delay(75);
+  chassis.clawT();
+  Move::MU::levelOn = false;
+  pros::Task cascadeTask([] {
+    Move::MU::cascadeControl();
+  });
+  auton::sec15R();
+
+  // double startX = RX.get_position()/100.0;
+  // double startY = RY.get_position()/100.0;
+  // double startH = imu.get_rotation();
+  // auton::test();
+  // eMsg.clearText();
+  // eMsg.addText(std::format("X:{:.2f}, Y:{:.2f}, H:{:.2f}", RX.get_position()/100.0 - startX, RY.get_position()/100.0 - startY, imu.get_rotation() - startH));
 }
 
 /**
@@ -226,12 +276,13 @@ void opcontrol() {
 
   uint8_t prev = 0;
   MVs pMVs;
+  PID pidC(0.0, 1.5, 0.15, 3.0, false);
   PID pidH(0.0, 1.0, 0.0, 3.0, false);
   pidH.setExit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
   pidH.setIntegral(0.0f, 0.0f);
   while (true) {
     control.Analog(pMVs, pidH);
-    prev = control.Buttons(prev);
+    prev = control.Buttons(prev, pidC);
 
     pros::delay(10);
   }

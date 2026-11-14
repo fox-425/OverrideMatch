@@ -53,6 +53,12 @@ namespace Printing {
     celMC1 = (uint8_t)MC1.get_temperature();
     celMC2 = (uint8_t)MC2.get_temperature();
     celMC3 = (uint8_t)MC3.get_temperature();
+    mvMC1 = MC1.get_voltage();
+    mvMC2 = MC2.get_voltage();
+    mvMC3 = MC3.get_voltage();
+    amMC1 = MC1.get_current_draw();
+    amMC2 = MC2.get_current_draw();
+    amMC3 = MC3.get_current_draw();
 
     pros::screen::print(pros::E_TEXT_SMALL, 0, "%05d", pros::millis());
     pros::screen::print(pros::E_TEXT_SMALL, 1, "%s", eMsg.content.c_str());
@@ -61,9 +67,9 @@ namespace Printing {
     pros::screen::print(pros::E_TEXT_SMALL, 4, "%02d %06d", celM2, mvM2);
     pros::screen::print(pros::E_TEXT_SMALL, 5, "%02d %06d", celM3, mvM3);
     pros::screen::print(pros::E_TEXT_SMALL, 6, "%02d %06d", celM4, mvM4);
-    pros::screen::print(pros::E_TEXT_SMALL, 7, "%02d", celMC1);
-    pros::screen::print(pros::E_TEXT_SMALL, 8, "%02d", celMC2);
-    pros::screen::print(pros::E_TEXT_SMALL, 9, "%02d", celMC3);
+    pros::screen::print(pros::E_TEXT_SMALL, 7, "%02d %06d %05d", celMC1, mvMC1, amMC1);
+    pros::screen::print(pros::E_TEXT_SMALL, 8, "%02d %06d %05d", celMC2, mvMC2, amMC2);
+    pros::screen::print(pros::E_TEXT_SMALL, 9, "%02d %06d %05d", celMC3, mvMC3, amMC3);
 
     // pros::screen::draw_pixel(479, 0);
     // pros::screen::draw_pixel(479, 239);

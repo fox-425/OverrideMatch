@@ -9,7 +9,7 @@ Control::Control(Drive& chassis, Controller& primary):
   chassis(chassis), primary(primary)
 {}
 
-uint8_t Control::Buttons(uint8_t prev) {
+uint8_t Control::Buttons(uint8_t prev, PID& pidC) {
   /*
   bool A = primary.get_digital(E_CONTROLLER_DIGITAL_A);
   bool B = primary.get_digital(E_CONTROLLER_DIGITAL_B);
@@ -20,8 +20,11 @@ uint8_t Control::Buttons(uint8_t prev) {
   bool S = primary.get_digital(E_CONTROLLER_DIGITAL_DOWN);
   bool W = primary.get_digital(E_CONTROLLER_DIGITAL_LEFT);
   */
+  constexpr uint8_t tarC = 1;
   bool R1 = primary.get_digital(E_CONTROLLER_DIGITAL_R1);
   bool R2 = primary.get_digital(E_CONTROLLER_DIGITAL_R2);
+  bool L1 = primary.get_digital(E_CONTROLLER_DIGITAL_L1);
+  bool B2 = primary.get_digital(E_CONTROLLER_DIGITAL_RIGHT);
   bool Y = primary.get_digital(E_CONTROLLER_DIGITAL_Y);
   bool R1_prev = prev & 0b00000001;
   bool R2_prev = prev & 0b00000010;
@@ -29,14 +32,27 @@ uint8_t Control::Buttons(uint8_t prev) {
   if (R1 && R2) {}
   else if (R1 && !R1_prev) {
     chassis.cascade(12000);
+    pidC.setTarget(chassis.distC.get_distance());
+    pidC.firstTime = true;
   } else if (R2 && !R2_prev) {
-    chassis.cascade(-12000);
+    chassis.cascade(-9000);
+    pidC.setTarget(chassis.distC.get_distance());
+    pidC.firstTime = true;
   } else if (!R1 && !R2 && (R1_prev || R2_prev)) {
+    // chassis.cascade(pidC.update(pros::millis(), chassis.distC.get_distance()).out * 48.0);
     chassis.cascade(0);
   }
-  chassis.toggle(Y ? 12000 : 0);
+  chassis.toggle(B2 ? 12000 : 0);
 
-  chassis.toggleToColor();
+  if (L1) {
+    uint8_t color = chassis.getColor();
+    if (color == 0 || color == tarC) {
+      chassis.toggle(0);
+    } else {
+      chassis.toggle(10500);
+    }
+  }
+  chassis.clawT(Y);
 
   uint8_t next = (R1 ? 0b00000001 : 0) | (R2 ? 0b00000010 : 0);
   return next;
